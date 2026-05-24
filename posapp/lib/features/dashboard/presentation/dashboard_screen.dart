@@ -485,27 +485,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Banner details
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Operational Control Room',
-                    style: GoogleFonts.inter(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      letterSpacing: -0.5,
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Operational Control Room',
+                      style: GoogleFonts.inter(
+                        fontSize: isDesktop ? 24 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Welcome back, manager. Terminals are active and syncing.',
-                    style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Welcome back, manager. Terminals are active and syncing.',
+                      style: GoogleFonts.inter(color: AppColors.outline, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
-              if (!isDesktop)
+              if (!isDesktop) ...[
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -517,20 +521,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: GoogleFonts.inter(color: AppColors.secondary, fontWeight: FontWeight.bold, fontSize: 10),
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 32),
 
           // Overview stats
-          Row(
-            children: [
-              Expanded(child: _StatCard(label: 'TODAY SALES', value: '\$1,248.50', icon: Icons.insights, color: AppColors.secondary)),
-              const SizedBox(width: 16),
-              Expanded(child: _StatCard(label: 'ACTIVE REGISTERS', value: '4 Terminal Nodes', icon: Icons.terminal, color: AppColors.accentPurple)),
-              const SizedBox(width: 16),
-              Expanded(child: _StatCard(label: 'DELEGATED EMPLOYEES', value: '8 Active Staff', icon: Icons.group, color: AppColors.accentGreen)),
-            ],
-          ),
+          if (isDesktop)
+            Row(
+              children: [
+                Expanded(child: _StatCard(label: 'TODAY SALES', value: '\$1,248.50', icon: Icons.insights, color: AppColors.secondary)),
+                const SizedBox(width: 16),
+                Expanded(child: _StatCard(label: 'ACTIVE REGISTERS', value: '4 Terminal Nodes', icon: Icons.terminal, color: AppColors.accentPurple)),
+                const SizedBox(width: 16),
+                Expanded(child: _StatCard(label: 'DELEGATED EMPLOYEES', value: '8 Active Staff', icon: Icons.group, color: AppColors.accentGreen)),
+              ],
+            )
+          else
+            Column(
+              children: [
+                _StatCard(label: 'TODAY SALES', value: '\$1,248.50', icon: Icons.insights, color: AppColors.secondary),
+                const SizedBox(height: 12),
+                _StatCard(label: 'ACTIVE REGISTERS', value: '4 Terminal Nodes', icon: Icons.terminal, color: AppColors.accentPurple),
+                const SizedBox(height: 12),
+                _StatCard(label: 'DELEGATED EMPLOYEES', value: '8 Active Staff', icon: Icons.group, color: AppColors.accentGreen),
+              ],
+            ),
 
           const SizedBox(height: 32),
 
@@ -548,7 +564,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisCount: isDesktop ? 3 : 2,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1.45,
+            childAspectRatio: isDesktop ? 1.45 : 1.1,
             children: [
               _ModuleCard(
                 icon: Icons.payments_outlined,
@@ -627,9 +643,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Icon(Icons.info_outline, color: Colors.white),
             const SizedBox(width: 12),
-            Text(
-              'Backend service required: $moduleName will connect to NestJS/Supabase.',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            Expanded(
+              child: Text(
+                'Backend service required: $moduleName will connect to NestJS/Supabase.',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+              ),
             ),
           ],
         ),
@@ -732,10 +750,10 @@ class _ModuleCard extends StatelessWidget {
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(14.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -743,23 +761,21 @@ class _ModuleCard extends StatelessWidget {
                   color: color.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(icon, color: color, size: 20),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    description,
-                    style: GoogleFonts.inter(color: AppColors.outline, fontSize: 11, height: 1.4),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: GoogleFonts.inter(color: AppColors.outline, fontSize: 10, height: 1.3),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
