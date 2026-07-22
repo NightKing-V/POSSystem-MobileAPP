@@ -49,14 +49,16 @@ class AuthRepository {
     required String password,
     String? businessName,
     String? phone,
+    String? businessType,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       ApiConstants.register,
       body: {
         'email': email,
         'password': password,
-        if (businessName != null) 'businessName': businessName,
-        if (phone != null) 'phone': phone,
+        'businessName': ?businessName,
+        'phone': ?phone,
+        'businessType': ?businessType,
       },
     );
 

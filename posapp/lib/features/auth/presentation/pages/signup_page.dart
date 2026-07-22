@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/auth_repository.dart';
+import 'package:posapp/features/Organisations/data/orgs_repository.dart';
+import 'package:posapp/features/Organisations/presentation/pages/select_business.dart';
 import '../widgets/auth_text_field.dart';
-import 'login_page.dart';
 
-/// Multi-step sign up flow. UI only — no auth wiring yet.
-///
-/// Deliberately a single route: each step swaps the *content* of one
-/// card via [AnimatedSwitcher] instead of pushing a new page. This is
-/// the same pattern Google/YouTube onboarding uses — it keeps state
-/// (typed values, scroll position, card chrome) alive across steps and
-/// avoids a navigation stack the user has to fight to back out of.
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -17,7 +12,15 @@ class SignupPage extends StatefulWidget {
   State<SignupPage> createState() => _SignupPageState();
 }
 
-enum _Step { credentials, phone, businessType, businessName, creating, verify }
+enum _Step {
+  credentials,
+  phone,
+  creatingAccount,
+  verify,
+  businessType,
+  businessName,
+  creatingBusiness,
+}
 
 class _SignupData {
   String email = '';
@@ -33,6 +36,8 @@ class _SignupPageState extends State<SignupPage> {
   String? _errorText;
 
   final _data = _SignupData();
+  final AuthRepository _authRepository = AuthRepository();
+  final OrgsRepository _orgsRepository = OrgsRepository();
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -43,23 +48,36 @@ class _SignupPageState extends State<SignupPage> {
   static const _stepOrder = [
     _Step.credentials,
     _Step.phone,
+    _Step.creatingAccount,
+    _Step.verify,
     _Step.businessType,
     _Step.businessName,
-    _Step.creating,
-    _Step.verify,
+    _Step.creatingBusiness,
   ];
 
   static const _stepLabels = [
     'Account',
     'Phone',
+    'Verify',
     'Business',
     'Details',
-    'Verify',
   ];
 
   int get _indicatorIndex {
-    final i = _stepOrder.indexOf(_step);
-    return i >= 4 ? 4 : i; // creating + verify both light up the last dot
+    switch (_step) {
+      case _Step.credentials:
+        return 0;
+      case _Step.phone:
+      case _Step.creatingAccount:
+        return 1;
+      case _Step.verify:
+        return 2;
+      case _Step.businessType:
+        return 3;
+      case _Step.businessName:
+      case _Step.creatingBusiness:
+        return 4;
+    }
   }
 
   @override
@@ -115,6 +133,14 @@ class _SignupPageState extends State<SignupPage> {
           return;
         }
         _data.phone = _phoneCtrl.text.trim();
+        _goTo(_Step.creatingAccount);
+        _registerUser();
+        break;
+
+      case _Step.creatingAccount:
+        break;
+
+      case _Step.verify:
         _goTo(_Step.businessType);
         break;
 
@@ -132,26 +158,53 @@ class _SignupPageState extends State<SignupPage> {
           return;
         }
         _data.businessName = _businessNameCtrl.text.trim();
-        _goTo(_Step.creating);
+        _goTo(_Step.creatingBusiness);
         _createBusiness();
         break;
 
-      case _Step.creating:
-        break; // no-op, waiting on _createBusiness()
-
-      case _Step.verify:
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
+      case _Step.creatingBusiness:
         break;
     }
   }
 
+  Future<void> _registerUser() async {
+    final response = await _authRepository.register(
+      email: _data.email,
+      password: _data.password,
+      phone: _data.phone,
+    );
+
+    if (!mounted || _step != _Step.creatingAccount) return;
+
+    if (response.isSuccess) {
+      _goTo(_Step.verify);
+    } else {
+      setState(() {
+        _errorText = response.errorMessage ?? 'Failed to register account';
+      });
+      _goTo(_Step.phone, direction: -1);
+    }
+  }
+
   Future<void> _createBusiness() async {
-    // Placeholder for the real account/business creation call.
-    await Future.delayed(const Duration(milliseconds: 1400));
-    if (!mounted || _step != _Step.creating) return;
-    _goTo(_Step.verify);
+    final response = await _orgsRepository.createOrganization(
+      businessName: _data.businessName,
+      businessType: _data.businessType!,
+      phone: _data.phone,
+    );
+
+    if (!mounted || _step != _Step.creatingBusiness) return;
+
+    if (response.isSuccess) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
+      );
+    } else {
+      setState(() {
+        _errorText = response.errorMessage ?? 'Failed to create business';
+      });
+      _goTo(_Step.businessName, direction: -1);
+    }
   }
 
   @override
@@ -173,12 +226,12 @@ class _SignupPageState extends State<SignupPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.hairline.withOpacity(0.6),
+                        color: AppColors.hairline.withValues(alpha: 0.6),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.ink.withOpacity(0.04),
+                          color: AppColors.ink.withValues(alpha: 0.04),
                           blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
@@ -190,7 +243,8 @@ class _SignupPageState extends State<SignupPage> {
                       children: [
                         const _Wordmark(),
                         const SizedBox(height: 24),
-                        if (_step != _Step.creating &&
+                        if (_step != _Step.creatingAccount &&
+                            _step != _Step.creatingBusiness &&
                             _step != _Step.verify) ...[
                           _StepProgress(
                             current: _indicatorIndex,
@@ -229,7 +283,7 @@ class _SignupPageState extends State<SignupPage> {
                                   alignment: Alignment.topCenter,
                                   children: [
                                     ...previousChildren,
-                                    if (currentChild != null) currentChild,
+                                    ?currentChild,
                                   ],
                                 ),
                             child: KeyedSubtree(
@@ -355,7 +409,10 @@ class _SignupPageState extends State<SignupPage> {
           ],
         );
 
-      case _Step.creating:
+      case _Step.creatingAccount:
+        return const _CreatingAccountView();
+
+      case _Step.creatingBusiness:
         return const _CreatingBusinessView();
 
       case _Step.verify:
@@ -528,7 +585,9 @@ class _BusinessTypeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.inkTeal.withOpacity(0.06) : Colors.white,
+          color: selected
+              ? AppColors.inkTeal.withValues(alpha: 0.06)
+              : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.inkTeal : AppColors.hairline,
@@ -564,6 +623,41 @@ class _BusinessTypeCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CreatingAccountView extends StatelessWidget {
+  const _CreatingAccountView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.inkTeal,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Setting up your account…',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'This only takes a moment',
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -621,7 +715,7 @@ class _VerifyEmailView extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.marigold.withOpacity(0.14),
+              color: AppColors.marigold.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
             child: const Icon(

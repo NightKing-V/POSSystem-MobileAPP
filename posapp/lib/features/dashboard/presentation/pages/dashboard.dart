@@ -151,7 +151,7 @@ class DashboardPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+                      border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
                     ),
                     child: Column(
                       children: [
@@ -162,7 +162,7 @@ class DashboardPage extends StatelessWidget {
                             time: _recentActivity[i].time,
                           ),
                           if (i != _recentActivity.length - 1)
-                            Divider(height: 1, color: AppColors.hairline.withOpacity(0.6)),
+                            Divider(height: 1, color: AppColors.hairline.withValues(alpha: 0.6)),
                         ],
                       ],
                     ),
@@ -198,10 +198,10 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withOpacity(0.04),
+            color: AppColors.ink.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -215,7 +215,7 @@ class _StatCard extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: AppColors.inkTeal.withOpacity(0.08),
+              color: AppColors.inkTeal.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppColors.inkTeal, size: 18),
@@ -260,7 +260,7 @@ class _QuickActionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+          border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -269,7 +269,7 @@ class _QuickActionTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.marigold.withOpacity(0.12),
+                color: AppColors.marigold.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: AppColors.inkTeal, size: 20),
