@@ -82,7 +82,7 @@ class DashboardPage extends StatelessWidget {
                   // Stat cards
                   isWide
                       ? SizedBox(
-                          height: 108,
+                          height: 120,
                           child: Row(
                             children: [
                               for (int i = 0; i < _stats.length; i++) ...[
@@ -100,7 +100,7 @@ class DashboardPage extends StatelessWidget {
                           ),
                         )
                       : SizedBox(
-                          height: 108,
+                          height: 120,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: _stats.length,
@@ -194,7 +194,7 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width ?? 160,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -209,27 +209,33 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: AppColors.inkTeal.withOpacity(0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppColors.inkTeal, size: 18),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ],
       ),
