@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../select_business/presentation/pages/select_business.dart';
-import '../../data/auth_repository.dart';
 import '../widgets/auth_text_field.dart';
 import 'login_page.dart';
 
-/// Sign up screen wired to AuthRepository.
+/// Multi-step sign up flow. UI only — no auth wiring yet.
+///
+/// Deliberately a single route: each step swaps the *content* of one
+/// card via [AnimatedSwitcher] instead of pushing a new page. This is
+/// the same pattern Google/YouTube onboarding uses — it keeps state
+/// (typed values, scroll position, card chrome) alive across steps and
+/// avoids a navigation stack the user has to fight to back out of.
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -45,7 +49,13 @@ class _SignupPageState extends State<SignupPage> {
     _Step.verify,
   ];
 
-  static const _stepLabels = ['Account', 'Phone', 'Business', 'Details', 'Verify'];
+  static const _stepLabels = [
+    'Account',
+    'Phone',
+    'Business',
+    'Details',
+    'Verify',
+  ];
 
   int get _indicatorIndex {
     final i = _stepOrder.indexOf(_step);
@@ -130,9 +140,9 @@ class _SignupPageState extends State<SignupPage> {
         break; // no-op, waiting on _createBusiness()
 
       case _Step.verify:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
         break;
     }
   }
@@ -142,80 +152,6 @@ class _SignupPageState extends State<SignupPage> {
     await Future.delayed(const Duration(milliseconds: 1400));
     if (!mounted || _step != _Step.creating) return;
     _goTo(_Step.verify);
-  }
-
-  @override
-  State<SignupPage> createState() => _SignupPageState();
-}
-
-class _SignupPageState extends State<SignupPage> {
-  final TextEditingController _businessNameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-
-  final AuthRepository _authRepository = AuthRepository();
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _businessNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleSignup() async {
-    final businessName = _businessNameController.text.trim();
-    final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields.')),
-      );
-      return;
-    }
-
-    if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    final response = await _authRepository.register(
-      email: email,
-      password: password,
-      businessName: businessName.isNotEmpty ? businessName : null,
-      phone: phone.isNotEmpty ? phone : null,
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (response.isSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created successfully!')),
-      );
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.errorMessage ?? 'Sign up failed.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
   }
 
   @override
@@ -253,68 +189,52 @@ class _SignupPageState extends State<SignupPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const _Wordmark(),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Create account',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.ink,
+                        const SizedBox(height: 24),
+                        if (_step != _Step.creating &&
+                            _step != _Step.verify) ...[
+                          _StepProgress(
+                            current: _indicatorIndex,
+                            labels: _stepLabels,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'to start tracking sales',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 32),
-                        const AuthTextField(
-                          label: 'Business name',
-                          hintText: 'e.g. Maya Boutique',
-                        ),
-                        const SizedBox(height: 20),
-                        const AuthTextField(
-                          label: 'Email',
-                          hintText: 'you@business.com',
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 20),
-                        const AuthTextField(
-                          label: 'Phone',
-                          hintText: '07X XXX XXXX',
-                          keyboardType: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 20),
-                        const AuthTextField(
-                          label: 'Password',
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 20),
-                        const AuthTextField(
-                          label: 'Confirm password',
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.inkTeal,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              'Create account',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          const SizedBox(height: 24),
+                        ],
+                        ClipRect(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 320),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) {
+                              final isIncoming = child.key == ValueKey(_step);
+                              final offsetAnim = Tween<Offset>(
+                                begin: Offset(
+                                  isIncoming
+                                      ? _direction * 0.15
+                                      : -_direction * 0.15,
+                                  0,
+                                ),
+                                end: Offset.zero,
+                              ).animate(animation);
+                              return ClipRect(
+                                child: SlideTransition(
+                                  position: offsetAnim,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                ),
+                              );
+                            },
+                            layoutBuilder: (currentChild, previousChildren) =>
+                                Stack(
+                                  alignment: Alignment.topCenter,
+                                  children: [
+                                    ...previousChildren,
+                                    if (currentChild != null) currentChild,
+                                  ],
+                                ),
+                            child: KeyedSubtree(
+                              key: ValueKey(_step),
+                              child: _buildStepContent(),
                             ),
                           ),
                         ),
@@ -322,20 +242,26 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Already have an account?', style: Theme.of(context).textTheme.bodyMedium),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.inkTeal,
-                          textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  if (_step == _Step.credentials)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Already have an account?',
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        child: const Text('Sign in'),
-                      ),
-                    ],
-                  ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.inkTeal,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          child: const Text('Sign in'),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -356,11 +282,24 @@ class _SignupPageState extends State<SignupPage> {
           onContinue: _next,
           showBack: true,
           fields: [
-            AuthTextField(label: 'Email', hintText: 'you@business.com', controller: _emailCtrl, keyboardType: TextInputType.emailAddress),
+            AuthTextField(
+              label: 'Email',
+              hintText: 'you@business.com',
+              controller: _emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+            ),
             const SizedBox(height: 20),
-            AuthTextField(label: 'Password', obscureText: true, controller: _passwordCtrl),
+            AuthTextField(
+              label: 'Password',
+              obscureText: true,
+              controller: _passwordCtrl,
+            ),
             const SizedBox(height: 20),
-            AuthTextField(label: 'Confirm password', obscureText: true, controller: _confirmCtrl),
+            AuthTextField(
+              label: 'Confirm password',
+              obscureText: true,
+              controller: _confirmCtrl,
+            ),
           ],
         );
 
@@ -372,7 +311,12 @@ class _SignupPageState extends State<SignupPage> {
           onBack: _back,
           onContinue: _next,
           fields: [
-            AuthTextField(label: 'Phone', hintText: '07X XXX XXXX', controller: _phoneCtrl, keyboardType: TextInputType.phone),
+            AuthTextField(
+              label: 'Phone',
+              hintText: '07X XXX XXXX',
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+            ),
           ],
         );
 
@@ -403,7 +347,11 @@ class _SignupPageState extends State<SignupPage> {
           onContinue: _next,
           continueLabel: 'Create account',
           fields: [
-            AuthTextField(label: 'Business name', hintText: 'e.g. Maya Boutique', controller: _businessNameCtrl),
+            AuthTextField(
+              label: 'Business name',
+              hintText: 'e.g. Maya Boutique',
+              controller: _businessNameCtrl,
+            ),
           ],
         );
 
@@ -453,8 +401,15 @@ class _StepShell extends StatelessWidget {
                 child: IconButton(
                   onPressed: onBack,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 20, color: AppColors.slate),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    size: 20,
+                    color: AppColors.slate,
+                  ),
                 ),
               ),
             Expanded(
@@ -475,7 +430,10 @@ class _StepShell extends StatelessWidget {
         ...fields,
         if (errorText != null) ...[
           const SizedBox(height: 12),
-          Text(errorText!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+          Text(
+            errorText!,
+            style: const TextStyle(color: AppColors.error, fontSize: 13),
+          ),
         ],
         const SizedBox(height: 28),
         SizedBox(
@@ -487,7 +445,9 @@ class _StepShell extends StatelessWidget {
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: Text(
               continueLabel,
@@ -513,13 +473,20 @@ class _BusinessTypeOption {
 
 const _businessTypeOptions = [
   _BusinessTypeOption('retail', 'Retail store', Icons.storefront_outlined),
-  _BusinessTypeOption('restaurant', 'Restaurant / cafe', Icons.restaurant_outlined),
+  _BusinessTypeOption(
+    'restaurant',
+    'Restaurant / cafe',
+    Icons.restaurant_outlined,
+  ),
   _BusinessTypeOption('service', 'Service business', Icons.handyman_outlined),
   _BusinessTypeOption('other', 'Other', Icons.apps_outlined),
 ];
 
 class _BusinessTypeSelector extends StatelessWidget {
-  const _BusinessTypeSelector({required this.selected, required this.onSelected});
+  const _BusinessTypeSelector({
+    required this.selected,
+    required this.onSelected,
+  });
 
   final String? selected;
   final ValueChanged<String> onSelected;
@@ -542,7 +509,11 @@ class _BusinessTypeSelector extends StatelessWidget {
 }
 
 class _BusinessTypeCard extends StatelessWidget {
-  const _BusinessTypeCard({required this.option, required this.selected, required this.onTap});
+  const _BusinessTypeCard({
+    required this.option,
+    required this.selected,
+    required this.onTap,
+  });
 
   final _BusinessTypeOption option;
   final bool selected;
@@ -566,7 +537,11 @@ class _BusinessTypeCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(option.icon, size: 20, color: selected ? AppColors.inkTeal : AppColors.slate),
+            Icon(
+              option.icon,
+              size: 20,
+              color: selected ? AppColors.inkTeal : AppColors.slate,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -581,7 +556,11 @@ class _BusinessTypeCard extends StatelessWidget {
             AnimatedOpacity(
               duration: const Duration(milliseconds: 180),
               opacity: selected ? 1 : 0,
-              child: const Icon(Icons.check_circle, size: 20, color: AppColors.inkTeal),
+              child: const Icon(
+                Icons.check_circle,
+                size: 20,
+                color: AppColors.inkTeal,
+              ),
             ),
           ],
         ),
@@ -603,10 +582,16 @@ class _CreatingBusinessView extends StatelessWidget {
           const SizedBox(
             width: 32,
             height: 32,
-            child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.inkTeal),
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.inkTeal,
+            ),
           ),
           const SizedBox(height: 20),
-          Text('Setting up your business…', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Setting up your business…',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 6),
           Text(
             'This only takes a moment',
@@ -639,7 +624,11 @@ class _VerifyEmailView extends StatelessWidget {
               color: AppColors.marigold.withOpacity(0.14),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.mark_email_read_outlined, color: AppColors.inkTeal, size: 26),
+            child: const Icon(
+              Icons.mark_email_read_outlined,
+              color: AppColors.inkTeal,
+              size: 26,
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -668,7 +657,9 @@ class _VerifyEmailView extends StatelessWidget {
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: Text(
               "I've verified — continue",
@@ -689,7 +680,10 @@ class _VerifyEmailView extends StatelessWidget {
               );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.inkTeal),
-            child: const Text('Resend email', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Resend email',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ),
       ],
