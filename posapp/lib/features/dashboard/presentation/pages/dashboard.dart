@@ -5,6 +5,7 @@ import 'add_product_view.dart';
 import 'cart_view.dart';
 import 'settings_view.dart';
 import 'employees_list_view.dart';
+import 'purchase_orders_list_view.dart';
 
 /// The main landing screen after a business/branch is selected.
 /// Featuring a bottom navigation bar to switch between Home, Add Product, Cart, and Settings.
@@ -72,6 +73,12 @@ class _DashboardPageState extends State<DashboardPage> {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const EmployeesListView(),
+                ),
+              );
+            } else if (actionLabel == 'Purchase Orders') {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PurchaseOrdersListView(),
                 ),
               );
             } else {

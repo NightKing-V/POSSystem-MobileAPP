@@ -3,6 +3,7 @@ import '../../../../core/theme/app_theme.dart';
 import 'locations_list_view.dart';
 import 'permission_sets_list_view.dart';
 import 'employees_list_view.dart';
+import 'suppliers_list_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key, required this.businessName});
@@ -117,6 +118,23 @@ class SettingsView extends StatelessWidget {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (_) => const EmployeesListView()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              _buildSettingsGroup(
+                context,
+                title: 'Inventory',
+                items: [
+                  _SettingsItem(
+                    icon: Icons.local_shipping_outlined,
+                    title: 'Suppliers',
+                    subtitle: 'Manage vendors and purchase orders',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const SuppliersListView()),
                     ),
                   ),
                 ],
