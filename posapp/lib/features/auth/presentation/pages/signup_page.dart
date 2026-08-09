@@ -33,7 +33,6 @@ class _SignupPageState extends State<SignupPage> {
   String? _errorText;
 
   final _data = _SignupData();
-
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
