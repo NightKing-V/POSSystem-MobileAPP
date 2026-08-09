@@ -4,6 +4,7 @@ import 'dashboard_home_view.dart';
 import 'add_product_view.dart';
 import 'cart_view.dart';
 import 'settings_view.dart';
+import 'employees_list_view.dart';
 
 /// The main landing screen after a business/branch is selected.
 /// Featuring a bottom navigation bar to switch between Home, Add Product, Cart, and Settings.
@@ -67,6 +68,12 @@ class _DashboardPageState extends State<DashboardPage> {
               setState(() {
                 _selectedIndex = 1;
               });
+            } else if (actionLabel == 'Staff') {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const EmployeesListView(),
+                ),
+              );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

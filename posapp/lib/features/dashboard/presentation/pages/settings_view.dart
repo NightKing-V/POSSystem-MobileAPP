@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'locations_list_view.dart';
+import 'permission_sets_list_view.dart';
+import 'employees_list_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key, required this.businessName});
@@ -80,6 +83,41 @@ class SettingsView extends StatelessWidget {
                     title: 'Taxes & Fees',
                     subtitle: 'Configure VAT, service charges, discounts',
                     onTap: () {},
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              _buildSettingsGroup(
+                context,
+                title: 'Team & Locations',
+                items: [
+                  _SettingsItem(
+                    icon: Icons.storefront_outlined,
+                    title: 'Locations',
+                    subtitle: 'Manage store branches and addresses',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const LocationsListView()),
+                    ),
+                  ),
+                  _SettingsItem(
+                    icon: Icons.admin_panel_settings_outlined,
+                    title: 'Permission Sets',
+                    subtitle: 'Define staff roles and access levels',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const PermissionSetsListView()),
+                    ),
+                  ),
+                  _SettingsItem(
+                    icon: Icons.badge_outlined,
+                    title: 'Employees',
+                    subtitle: 'Add staff and assign PINs',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const EmployeesListView()),
+                    ),
                   ),
                 ],
               ),
