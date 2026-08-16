@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/product.dart';
 
@@ -75,10 +75,10 @@ class _ProductCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.hairline.withOpacity(0.7), width: 1.5),
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.7), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.ink.withOpacity(0.03),
+                color: AppColors.ink.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -93,7 +93,7 @@ class _ProductCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _categoryColor.withOpacity(0.1),
+                      color: _categoryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -111,7 +111,7 @@ class _ProductCard extends StatelessWidget {
                     width: 20,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: AppColors.inkTeal.withOpacity(0.08),
+                      color: AppColors.inkTeal.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Icon(Icons.add_rounded, size: 13, color: AppColors.inkTeal),
@@ -157,7 +157,7 @@ class _EmptySearch extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded, size: 36, color: AppColors.slate.withOpacity(0.4)),
+            Icon(Icons.search_off_rounded, size: 36, color: AppColors.slate.withValues(alpha: 0.4)),
             const SizedBox(height: 10),
             Text(
               'No products found',
@@ -169,3 +169,4 @@ class _EmptySearch extends StatelessWidget {
     );
   }
 }
+

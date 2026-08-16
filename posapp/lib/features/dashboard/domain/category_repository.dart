@@ -1,4 +1,4 @@
-/// Category domain model and in-memory repository.
+// Category domain model and in-memory repository.
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'locations_list_view.dart';
 import 'permission_sets_list_view.dart';
@@ -25,13 +25,13 @@ class SettingsView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+                  border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: AppColors.inkTeal.withOpacity(0.1),
+                      backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
                       child: Text(
                         businessName.isNotEmpty ? businessName.substring(0, 1).toUpperCase() : 'B',
                         style: const TextStyle(
@@ -171,7 +171,7 @@ class SettingsView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+                  border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
                 ),
                 child: ListTile(
                   onTap: () {
@@ -202,7 +202,7 @@ class SettingsView extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.08),
+                      color: AppColors.error.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.logout, color: AppColors.error, size: 20),
@@ -250,7 +250,7 @@ class SettingsView extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
           ),
           child: Column(
             children: [
@@ -261,7 +261,7 @@ class SettingsView extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: AppColors.inkTeal.withOpacity(0.08),
+                      color: AppColors.inkTeal.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(items[i].icon, color: AppColors.inkTeal, size: 20),
@@ -300,3 +300,4 @@ class _SettingsItem {
   final String subtitle;
   final VoidCallback onTap;
 }
+

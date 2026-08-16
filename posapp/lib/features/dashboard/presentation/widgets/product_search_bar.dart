@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// Search bar for the product panel.
@@ -67,7 +67,7 @@ class _ScanButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: AppColors.inkTeal.withOpacity(0.28),
+              color: AppColors.inkTeal.withValues(alpha: 0.28),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -78,3 +78,4 @@ class _ScanButton extends StatelessWidget {
     );
   }
 }
+

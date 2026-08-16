@@ -39,7 +39,7 @@ class PermissionSetsListView extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
               itemCount: mockPermissionSets.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, i) => _PermissionSetCard(
                 ps: mockPermissionSets[i],
                 onTap: () => Navigator.of(context).push(
@@ -87,7 +87,7 @@ class _PermissionSetCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border:
-              Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+              Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +98,7 @@ class _PermissionSetCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.inkTeal.withOpacity(0.08),
+                    color: AppColors.inkTeal.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.admin_panel_settings_outlined,
@@ -149,10 +149,10 @@ class _PermChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.inkTeal.withOpacity(0.07),
+        color: AppColors.inkTeal.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-            color: AppColors.inkTeal.withOpacity(0.2), width: 1),
+            color: AppColors.inkTeal.withValues(alpha: 0.2), width: 1),
       ),
       child: Text(
         label,
@@ -164,3 +164,4 @@ class _PermChip extends StatelessWidget {
     );
   }
 }
+

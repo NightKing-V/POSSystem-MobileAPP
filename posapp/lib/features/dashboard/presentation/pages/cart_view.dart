@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../billing/bill_calculator.dart';
 import '../../domain/models/cart_item.dart';
@@ -215,7 +215,7 @@ class _CartViewState extends State<CartView> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: const Color(0xFF16A34A).withOpacity(0.1),
+                color: const Color(0xFF16A34A).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check_rounded,
@@ -452,7 +452,7 @@ class _WideLayout extends StatelessWidget {
         // ── Vertical divider ─────────────────────────────────────────────
         Container(
           width: 1.5,
-          color: AppColors.hairline.withOpacity(0.6),
+          color: AppColors.hairline.withValues(alpha: 0.6),
         ),
 
         // ── Right: cart panel (fixed width) ──────────────────────────────
@@ -598,7 +598,7 @@ class _NarrowLayout extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.inkTeal.withOpacity(0.1),
+                    color: AppColors.inkTeal.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -677,13 +677,13 @@ class _EmptyCartState extends StatelessWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppColors.inkTeal.withOpacity(0.06),
+                color: AppColors.inkTeal.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.point_of_sale_outlined,
                 size: 44,
-                color: AppColors.inkTeal.withOpacity(0.35),
+                color: AppColors.inkTeal.withValues(alpha: 0.35),
               ),
             ),
             const SizedBox(height: 20),
@@ -739,7 +739,7 @@ class _CustomerSectionState extends State<_CustomerSection> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -905,7 +905,7 @@ class _PanelToggleBtn extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           color: expanded
-              ? AppColors.inkTeal.withOpacity(0.1)
+              ? AppColors.inkTeal.withValues(alpha: 0.1)
               : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
@@ -924,3 +924,4 @@ class _PanelToggleBtn extends StatelessWidget {
     );
   }
 }
+

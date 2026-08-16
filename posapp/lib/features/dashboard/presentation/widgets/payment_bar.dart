@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// The cashier's payment method options.
@@ -36,11 +36,11 @@ class PaymentBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+          top: BorderSide(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withOpacity(0.07),
+            color: AppColors.ink.withValues(alpha: 0.07),
             blurRadius: 18,
             offset: const Offset(0, -5),
           ),
@@ -244,3 +244,4 @@ class _GhostBtn extends StatelessWidget {
     );
   }
 }
+

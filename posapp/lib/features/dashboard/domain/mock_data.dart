@@ -1,7 +1,3 @@
-/// In-memory mock data for Business Hierarchy screens.
-/// Replace with repository calls when wiring to a real backend.
-library mock_data;
-
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 class MockLocation {

@@ -136,7 +136,7 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
                       children: [
                         _Label('Timezone'),
                         DropdownButtonFormField<String>(
-                          value: _selectedTimezone,
+                          initialValue: _selectedTimezone,
                           items: _timezones
                               .map((tz) => DropdownMenuItem(
                                   value: tz, child: Text(tz)))
@@ -148,7 +148,7 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
                         const SizedBox(height: 16),
                         _Label('Currency'),
                         DropdownButtonFormField<String>(
-                          value: _selectedCurrency,
+                          initialValue: _selectedCurrency,
                           items: _currencies
                               .map((c) => DropdownMenuItem(
                                   value: c, child: Text(c)))
@@ -208,7 +208,7 @@ class _FormCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border:
-            Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+            Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,3 +245,4 @@ class _Label extends StatelessWidget {
     );
   }
 }
+

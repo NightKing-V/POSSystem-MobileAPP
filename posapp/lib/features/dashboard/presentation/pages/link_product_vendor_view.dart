@@ -161,7 +161,7 @@ class _ProductPicker extends StatelessWidget {
             controller: scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             itemCount: filtered.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (_, i) => ListTile(
               onTap: () => onSelect(filtered[i]),
               tileColor: AppColors.paper,

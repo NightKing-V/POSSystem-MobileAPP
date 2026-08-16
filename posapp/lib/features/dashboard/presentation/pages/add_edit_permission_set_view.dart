@@ -99,7 +99,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                            color: AppColors.hairline.withOpacity(0.6),
+                            color: AppColors.hairline.withValues(alpha: 0.6),
                             width: 1.5),
                       ),
                       child: Column(
@@ -132,7 +132,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                            color: AppColors.hairline.withOpacity(0.6),
+                            color: AppColors.hairline.withValues(alpha: 0.6),
                             width: 1.5),
                       ),
                       child: Column(
@@ -141,7 +141,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                           SwitchListTile(
                             value: _allEnabled,
                             onChanged: _toggleAll,
-                            activeColor: AppColors.inkTeal,
+                            activeThumbColor: AppColors.inkTeal,
                             title: const Text(
                               'Full Access',
                               style: TextStyle(
@@ -156,7 +156,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                               width: 38,
                               height: 38,
                               decoration: BoxDecoration(
-                                color: AppColors.inkTeal.withOpacity(0.08),
+                                color: AppColors.inkTeal.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
@@ -248,7 +248,7 @@ class _PermissionTile extends StatelessWidget {
     return SwitchListTile(
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.inkTeal,
+      activeThumbColor: AppColors.inkTeal,
       title: Text(category,
           style:
               const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -256,7 +256,7 @@ class _PermissionTile extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: AppColors.inkTeal.withOpacity(0.08),
+          color: AppColors.inkTeal.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(_icons[category] ?? Icons.lock_outline,
@@ -265,3 +265,4 @@ class _PermissionTile extends StatelessWidget {
     );
   }
 }
+

@@ -553,7 +553,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 controller: ctrl,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 itemCount: _filtered.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                separatorBuilder: (_, _) => const SizedBox(height: 6),
                 itemBuilder: (_, i) => ListTile(
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),

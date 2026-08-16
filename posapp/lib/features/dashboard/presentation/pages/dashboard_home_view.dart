@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/quick_action_tile.dart';
@@ -121,7 +121,7 @@ class DashboardHomeView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+                  border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
                 ),
                 child: Column(
                   children: [
@@ -132,7 +132,7 @@ class DashboardHomeView extends StatelessWidget {
                         time: _recentActivity[i].time,
                       ),
                       if (i != _recentActivity.length - 1)
-                        Divider(height: 1, color: AppColors.hairline.withOpacity(0.6)),
+                        Divider(height: 1, color: AppColors.hairline.withValues(alpha: 0.6)),
                     ],
                   ],
                 ),
@@ -144,3 +144,4 @@ class DashboardHomeView extends StatelessWidget {
     );
   }
 }
+

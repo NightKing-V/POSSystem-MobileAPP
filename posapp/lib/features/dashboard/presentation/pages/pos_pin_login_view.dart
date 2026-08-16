@@ -55,14 +55,6 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
     }
   }
 
-  void _reset() {
-    setState(() {
-      _entered.clear();
-      _errorMessage = null;
-      _loggedInEmployee = null;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,7 +180,7 @@ class _SuccessAvatar extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundColor: AppColors.inkTeal.withOpacity(0.12),
+              backgroundColor: AppColors.inkTeal.withValues(alpha: 0.12),
               child: Text(
                 initials,
                 style: const TextStyle(
@@ -273,7 +265,7 @@ class _NumPad extends StatelessWidget {
                     height: 56,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.hairline.withOpacity(0.4),
+                      color: AppColors.hairline.withValues(alpha: 0.4),
                     ),
                     child: const Icon(Icons.backspace_outlined,
                         color: AppColors.ink, size: 20),
@@ -305,10 +297,10 @@ class _NumKey extends StatelessWidget {
           shape: BoxShape.circle,
           color: Colors.white,
           border: Border.all(
-              color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+              color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppColors.ink.withOpacity(0.04),
+              color: AppColors.ink.withValues(alpha: 0.04),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -326,3 +318,4 @@ class _NumKey extends StatelessWidget {
     );
   }
 }
+

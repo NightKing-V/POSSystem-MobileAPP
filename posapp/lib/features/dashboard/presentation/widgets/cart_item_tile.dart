@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/cart_item.dart';
@@ -86,10 +86,10 @@ class _CartItemTileState extends State<CartItemTile> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.hairline.withOpacity(0.65), width: 1.5),
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.65), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withOpacity(0.025),
+            color: AppColors.ink.withValues(alpha: 0.025),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -167,7 +167,7 @@ class _CartItemTileState extends State<CartItemTile> {
                     ),
                     _TileIconBtn(
                       icon: Icons.percent_rounded,
-                      color: _showDiscount ? AppColors.inkTeal : AppColors.slate.withOpacity(0.5),
+                      color: _showDiscount ? AppColors.inkTeal : AppColors.slate.withValues(alpha: 0.5),
                       onTap: () => setState(() => _showDiscount = !_showDiscount),
                     ),
                   ],
@@ -263,7 +263,7 @@ class _StepBtn extends StatelessWidget {
         width: 26,
         height: 26,
         decoration: BoxDecoration(
-          color: AppColors.inkTeal.withOpacity(0.09),
+          color: AppColors.inkTeal.withValues(alpha: 0.09),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(icon, size: 13, color: AppColors.inkTeal),
@@ -329,9 +329,9 @@ class _ItemDiscountRow extends StatelessWidget {
             width: 70,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.marigold.withOpacity(0.07),
+              color: AppColors.marigold.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.marigold.withOpacity(0.35), width: 1.5),
+              border: Border.all(color: AppColors.marigold.withValues(alpha: 0.35), width: 1.5),
             ),
             child: Row(
               children: [
@@ -380,3 +380,4 @@ class _ItemDiscountRow extends StatelessWidget {
     );
   }
 }
+
