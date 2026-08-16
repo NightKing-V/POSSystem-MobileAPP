@@ -50,7 +50,7 @@ class _LocationsListViewState extends State<LocationsListView> {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
               itemCount: _locations.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, i) => _LocationCard(
                 location: _locations[i],
                 isActive: _activeStates[i],
@@ -102,7 +102,7 @@ class _LocationCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border:
-              Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+              Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,7 +113,7 @@ class _LocationCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.inkTeal.withOpacity(0.08),
+                    color: AppColors.inkTeal.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.storefront_outlined,
@@ -136,7 +136,7 @@ class _LocationCard extends StatelessWidget {
                 Switch(
                   value: isActive,
                   onChanged: onToggle,
-                  activeColor: AppColors.inkTeal,
+                  activeThumbColor: AppColors.inkTeal,
                 ),
               ],
             ),
@@ -174,7 +174,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.inkTeal.withOpacity(0.06),
+        color: AppColors.inkTeal.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -204,8 +204,8 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isActive
-            ? const Color(0xFF16A34A).withOpacity(0.08)
-            : AppColors.slate.withOpacity(0.08),
+            ? const Color(0xFF16A34A).withValues(alpha: 0.08)
+            : AppColors.slate.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -219,3 +219,4 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
+

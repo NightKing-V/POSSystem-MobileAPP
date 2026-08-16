@@ -120,10 +120,10 @@ class _AddProductFormState extends State<AddProductForm> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.ink.withOpacity(0.04),
+                  color: AppColors.ink.withValues(alpha: 0.04),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -173,7 +173,7 @@ class _AddProductFormState extends State<AddProductForm> {
                       child: ElevatedButton(
                         onPressed: _scanMockBarcode,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.marigold.withOpacity(0.12),
+                          backgroundColor: AppColors.marigold.withValues(alpha: 0.12),
                           foregroundColor: AppColors.inkTeal,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -190,7 +190,7 @@ class _AddProductFormState extends State<AddProductForm> {
 
                 _buildLabel('Category'),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   hint: const Text('Select a category'),
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -334,3 +334,4 @@ class _AddProductFormState extends State<AddProductForm> {
     );
   }
 }
+

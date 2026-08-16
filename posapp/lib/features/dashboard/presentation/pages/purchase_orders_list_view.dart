@@ -79,7 +79,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                           padding:
                               const EdgeInsets.fromLTRB(24, 8, 24, 100),
                           itemCount: orders.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 10),
                           itemBuilder: (_, i) => _PoListTile(
                             po: orders[i],

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class AddCategoryForm extends StatefulWidget {
@@ -71,12 +71,12 @@ class _AddCategoryFormState extends State<AddCategoryForm> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.hairline.withOpacity(0.6),
+                color: AppColors.hairline.withValues(alpha: 0.6),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.ink.withOpacity(0.04),
+                  color: AppColors.ink.withValues(alpha: 0.04),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -163,3 +163,4 @@ class _AddCategoryFormState extends State<AddCategoryForm> {
     );
   }
 }
+

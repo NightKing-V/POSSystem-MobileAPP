@@ -164,7 +164,7 @@ class _ReceivePurchaseOrderViewState
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     itemCount: _rows.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(height: 8),
                     itemBuilder: (_, i) => _ReceiveItemRow(
                       row: _rows[i],

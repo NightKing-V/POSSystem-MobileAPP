@@ -184,7 +184,7 @@ class _HeaderCard extends StatelessWidget {
               Switch(
                 value: isActive,
                 onChanged: onToggle,
-                activeColor: AppColors.inkTeal,
+                activeThumbColor: AppColors.inkTeal,
               ),
             ],
           ),

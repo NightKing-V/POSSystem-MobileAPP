@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class QuickActionTile extends StatelessWidget {
@@ -23,7 +23,7 @@ class QuickActionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+          border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -32,7 +32,7 @@ class QuickActionTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.marigold.withOpacity(0.12),
+                color: AppColors.marigold.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: AppColors.inkTeal, size: 20),
@@ -51,3 +51,4 @@ class QuickActionTile extends StatelessWidget {
     );
   }
 }
+

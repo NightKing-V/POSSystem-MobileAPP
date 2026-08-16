@@ -99,7 +99,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
                           padding:
                               const EdgeInsets.fromLTRB(24, 0, 24, 100),
                           itemCount: employees.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 10),
                           itemBuilder: (context, i) => _EmployeeTile(
                             employee: employees[i],
@@ -153,14 +153,14 @@ class _EmployeeTile extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+              color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
         ),
         child: Row(
           children: [
             // Avatar
             CircleAvatar(
               radius: 22,
-              backgroundColor: AppColors.inkTeal.withOpacity(0.1),
+              backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
               child: Text(
                 initials,
                 style: const TextStyle(
@@ -212,7 +212,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.marigold.withOpacity(0.12),
+        color: AppColors.marigold.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(label,
@@ -252,7 +252,7 @@ class _EmptySearch extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off_rounded,
-              size: 40, color: AppColors.slate.withOpacity(0.4)),
+              size: 40, color: AppColors.slate.withValues(alpha: 0.4)),
           const SizedBox(height: 10),
           Text('No employees found',
               style: Theme.of(context)
@@ -264,3 +264,4 @@ class _EmptySearch extends StatelessWidget {
     );
   }
 }
+

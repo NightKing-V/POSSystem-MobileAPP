@@ -98,7 +98,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                           padding:
                               const EdgeInsets.fromLTRB(24, 0, 24, 100),
                           itemCount: vendors.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 10),
                           itemBuilder: (_, i) => SupplierCard(
                             vendor: vendors[i],

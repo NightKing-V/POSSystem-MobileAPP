@@ -149,7 +149,7 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                       children: [
                         _Label('Location *'),
                         DropdownButtonFormField<String>(
-                          value: _selectedLocationId,
+                          initialValue: _selectedLocationId,
                           items: mockLocations
                               .map((l) => DropdownMenuItem(
                                   value: l.id, child: Text(l.name)))
@@ -161,7 +161,7 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                         const SizedBox(height: 16),
                         _Label('Permission Set *'),
                         DropdownButtonFormField<String>(
-                          value: _selectedPermSetId,
+                          initialValue: _selectedPermSetId,
                           items: mockPermissionSets
                               .map((p) => DropdownMenuItem(
                                   value: p.id, child: Text(p.name)))
@@ -290,7 +290,7 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+            color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,3 +327,4 @@ class _Label extends StatelessWidget {
     );
   }
 }
+
