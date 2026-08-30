@@ -30,12 +30,12 @@ class SelectBusinessCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.hairline.withOpacity(0.6),
+            color: AppColors.hairline.withValues(alpha: 0.6),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.ink.withOpacity(0.04),
+              color: AppColors.ink.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -47,7 +47,7 @@ class SelectBusinessCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.inkTeal.withOpacity(0.08),
+                color: AppColors.inkTeal.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: AppColors.inkTeal, size: 24),

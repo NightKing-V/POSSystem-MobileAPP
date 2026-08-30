@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/models/supplier_mock_data.dart';
+import '../../../suppliers/domain/models/supplier_mock_data.dart';
 
 /// Reusable PO status badge chip.
 class StatusBadge extends StatelessWidget {

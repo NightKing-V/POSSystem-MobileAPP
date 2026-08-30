@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import 'dashboard_home_view.dart';
-import 'add_product_view.dart';
-import 'cart_view.dart';
-import 'settings_view.dart';
-import 'employees_list_view.dart';
-import 'purchase_orders_list_view.dart';
+import './dashboard_home_view.dart';
+import '../../../inventory/presentation/pages/add_product_view.dart';
+import '../../../pos/presentation/pages/cart_view.dart';
+import '../../../settings/presentation/pages/settings_view.dart';
+import '../../../staff/presentation/pages/employees_list_view.dart';
+import '../../../suppliers/presentation/pages/purchase_orders_list_view.dart';
+import './side_nav_panel.dart';
+import './sidebar.dart';
 
 /// The main landing screen after a business/branch is selected.
 /// Featuring a bottom navigation bar to switch between Home, Add Product, Cart, and Settings.
@@ -119,9 +121,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final isWide = MediaQuery.of(context).size.width >= 600;
+    final isDesktop = MediaQuery.of(context).size.width > 1024;
+
+    final scaffold = Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
+        automaticallyImplyLeading: !isWide,
         backgroundColor: AppColors.paper,
         elevation: 0,
         titleSpacing: 24,
@@ -139,59 +145,88 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ],
         ),
-        actions: _buildAppBarActions(),
+        actions: isWide ? null : _buildAppBarActions(),
       ),
+      drawer: isWide
+          ? null
+          : Sidebar(businessName: widget.businessName),
       body: SafeArea(
         child: _buildBody(),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: AppColors.hairline.withOpacity(0.6),
-              width: 1.5,
+      bottomNavigationBar: isWide
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.hairline.withValues(alpha: 0.6),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              child: BottomNavigationBar(
+                currentIndex: _selectedIndex,
+                onTap: (index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                backgroundColor: Colors.white,
+                selectedItemColor: AppColors.inkTeal,
+                unselectedItemColor: AppColors.slate,
+                selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                unselectedLabelStyle: const TextStyle(fontSize: 12),
+                type: BottomNavigationBarType.fixed,
+                elevation: 0,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.dashboard_outlined),
+                    activeIcon: Icon(Icons.dashboard),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.add_circle_outline),
+                    activeIcon: Icon(Icons.add_circle),
+                    label: 'Add Product',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.shopping_cart_outlined),
+                    activeIcon: Icon(Icons.shopping_cart),
+                    label: 'Cart',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.settings_outlined),
+                    activeIcon: Icon(Icons.settings),
+                    label: 'Settings',
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.inkTeal,
-          unselectedItemColor: AppColors.slate,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontSize: 12),
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Home',
+    );
+
+    if (isWide) {
+      return Scaffold(
+        backgroundColor: AppColors.paper,
+        body: Row(
+          children: [
+            SideNavPanel(
+              businessName: widget.businessName,
+              selectedIndex: _selectedIndex,
+              onItemSelected: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              onSwitchBusiness: () => Navigator.of(context).pop(),
+              isExpanded: isDesktop,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline),
-              activeIcon: Icon(Icons.add_circle),
-              label: 'Add Product',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart_outlined),
-              activeIcon: Icon(Icons.shopping_cart),
-              label: 'Cart',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
+            Expanded(child: scaffold),
           ],
         ),
-      ),
-    );
+      );
+    }
+
+    return scaffold;
   }
 }

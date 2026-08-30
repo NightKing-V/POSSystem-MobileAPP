@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/auth_text_field.dart';
-import 'login_page.dart';
+import './login_page.dart';
 
 /// Multi-step sign up flow. UI only — no auth wiring yet.
 ///
@@ -166,12 +166,12 @@ class _SignupPageState extends State<SignupPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.hairline.withOpacity(0.6),
+                        color: AppColors.hairline.withValues(alpha: 0.6),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.ink.withOpacity(0.04),
+                          color: AppColors.ink.withValues(alpha: 0.04),
                           blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
@@ -455,7 +455,7 @@ class _BusinessTypeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.inkTeal.withOpacity(0.06) : Colors.white,
+          color: selected ? AppColors.inkTeal.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.inkTeal : AppColors.hairline,
@@ -517,11 +517,24 @@ class _CreatingBusinessView extends StatelessWidget {
   }
 }
 
-class _VerifyEmailView extends StatelessWidget {
+class _VerifyEmailView extends StatefulWidget {
   const _VerifyEmailView({required this.email, required this.onContinue});
 
   final String email;
   final VoidCallback onContinue;
+
+  @override
+  State<_VerifyEmailView> createState() => _VerifyEmailViewState();
+}
+
+class _VerifyEmailViewState extends State<_VerifyEmailView> {
+  final _otpCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _otpCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -534,7 +547,7 @@ class _VerifyEmailView extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.marigold.withOpacity(0.14),
+              color: AppColors.marigold.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.mark_email_read_outlined, color: AppColors.inkTeal, size: 26),
@@ -552,16 +565,23 @@ class _VerifyEmailView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'We sent a verification link to\n$email',
+          'We sent a 6-digit code to\n${widget.email}',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 24),
+        AuthTextField(
+          label: 'Verification Code',
+          hintText: 'Enter 6-digit OTP',
+          controller: _otpCtrl,
+          keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: onContinue,
+            onPressed: widget.onContinue,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
@@ -569,7 +589,7 @@ class _VerifyEmailView extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
-              "I've verified — continue",
+              "Verify and Continue",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -583,11 +603,11 @@ class _VerifyEmailView extends StatelessWidget {
           child: TextButton(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Verification email resent')),
+                const SnackBar(content: Text('OTP resent to your email')),
               );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.inkTeal),
-            child: const Text('Resend email', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text('Resend code', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ),
       ],

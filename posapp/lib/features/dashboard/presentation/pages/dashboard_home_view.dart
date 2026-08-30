@@ -54,7 +54,7 @@ class DashboardHomeView extends StatelessWidget {
               // Stat cards
               isWide
                   ? SizedBox(
-                      height: 108,
+                      height: 124,
                       child: Row(
                         children: [
                           for (int i = 0; i < _stats.length; i++) ...[
@@ -72,7 +72,7 @@ class DashboardHomeView extends StatelessWidget {
                       ),
                     )
                   : SizedBox(
-                      height: 108,
+                      height: 124,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _stats.length,
@@ -121,7 +121,7 @@ class DashboardHomeView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.hairline.withOpacity(0.6), width: 1.5),
+                  border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
                 ),
                 child: Column(
                   children: [
@@ -132,7 +132,7 @@ class DashboardHomeView extends StatelessWidget {
                         time: _recentActivity[i].time,
                       ),
                       if (i != _recentActivity.length - 1)
-                        Divider(height: 1, color: AppColors.hairline.withOpacity(0.6)),
+                        Divider(height: 1, color: AppColors.hairline.withValues(alpha: 0.6)),
                     ],
                   ],
                 ),
