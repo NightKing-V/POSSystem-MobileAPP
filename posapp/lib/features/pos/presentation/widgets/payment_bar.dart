@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// The cashier's payment method options.
@@ -53,7 +54,7 @@ class PaymentBar extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Pay via',
+                context.tr('pos.payment_method'),
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -61,21 +62,21 @@ class PaymentBar extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               _PayChip(
-                label: 'Cash',
+                label: context.tr('pos.cash'),
                 icon: Icons.payments_outlined,
                 selected: selectedMethod == PaymentMethod.cash,
                 onTap: () => onMethodChanged(PaymentMethod.cash),
               ),
               const SizedBox(width: 6),
               _PayChip(
-                label: 'Card',
+                label: context.tr('pos.card'),
                 icon: Icons.credit_card_rounded,
                 selected: selectedMethod == PaymentMethod.card,
                 onTap: () => onMethodChanged(PaymentMethod.card),
               ),
               const SizedBox(width: 6),
               _PayChip(
-                label: 'Wallet',
+                label: context.tr('pos.bank_transfer'),
                 icon: Icons.account_balance_wallet_outlined,
                 selected: selectedMethod == PaymentMethod.wallet,
                 onTap: () => onMethodChanged(PaymentMethod.wallet),
@@ -98,7 +99,7 @@ class PaymentBar extends StatelessWidget {
               const SizedBox(width: 6),
               // Clear bill
               _GhostBtn(
-                label: 'Clear',
+                label: context.tr('common.clear'),
                 icon: Icons.delete_sweep_outlined,
                 color: AppColors.error,
                 enabled: hasItems,
@@ -126,7 +127,7 @@ class PaymentBar extends StatelessWidget {
                         const Icon(Icons.bolt_rounded, size: 17),
                         const SizedBox(width: 5),
                         Text(
-                          'Charge  Rs. ${grandTotal.toStringAsFixed(2)}',
+                          '${context.tr('pos.pay_now')}  Rs. ${grandTotal.toStringAsFixed(2)}',
                           style: Theme.of(context)
                               .textTheme
                               .labelLarge
@@ -180,15 +181,18 @@ class _PayChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13,
-                color: selected ? Colors.white : AppColors.slate),
-            const SizedBox(width: 4),
+            Icon(
+              icon,
+              size: 14,
+              color: selected ? Colors.white : AppColors.ink,
+            ),
+            const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppColors.slate,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected ? Colors.white : AppColors.ink,
               ),
             ),
           ],
@@ -215,33 +219,21 @@ class _GhostBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : AppColors.hairline;
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        height: 46,
-        padding: const EdgeInsets.symmetric(horizontal: 11),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.hairline, width: 1.5),
-          borderRadius: BorderRadius.circular(10),
+    return OutlinedButton.icon(
+      onPressed: enabled ? onTap : null,
+      icon: Icon(icon, size: 16),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        disabledForegroundColor: AppColors.hairline,
+        side: BorderSide(
+          color: enabled ? color.withValues(alpha: 0.4) : AppColors.hairline,
+          width: 1.5,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: effectiveColor),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: effectiveColor,
-              ),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        minimumSize: const Size(0, 46),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 }
-

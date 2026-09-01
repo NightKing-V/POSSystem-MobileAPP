@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'api_constants.dart';
 import 'token_storage.dart';
@@ -138,20 +137,32 @@ class ApiClient {
     };
   }
 
+  /// Helper to build URI with query parameters
+  Uri _buildUri(String endpoint, [Map<String, dynamic>? queryParams]) {
+    final cleanParams = queryParams?.map((k, v) => MapEntry(k, v.toString()))
+      ?..removeWhere((_, v) => v.isEmpty);
+    final uri = Uri.parse('$baseUrl$endpoint');
+    if (cleanParams != null && cleanParams.isNotEmpty) {
+      return uri.replace(queryParameters: cleanParams);
+    }
+    return uri;
+  }
+
   /// GET Request
   Future<ApiResponse<T>> get<T>(
     String endpoint, {
+    Map<String, dynamic>? queryParams,
     Map<String, String>? headers,
     T Function(dynamic json)? parser,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl$endpoint');
+      final uri = _buildUri(endpoint, queryParams);
       final response = await http.get(uri, headers: _buildHeaders(headers));
       return _handleStatusCode<T>(response, parser);
-    } on SocketException {
+    } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error. Please check your connection.',
+        errorMessage: 'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -171,17 +182,17 @@ class ApiClient {
     T Function(dynamic json)? parser,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl$endpoint');
+      final uri = _buildUri(endpoint);
       final response = await http.post(
         uri,
         headers: _buildHeaders(headers),
         body: body != null ? jsonEncode(body) : null,
       );
       return _handleStatusCode<T>(response, parser);
-    } on SocketException {
+    } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error. Please check your connection.',
+        errorMessage: 'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -201,17 +212,47 @@ class ApiClient {
     T Function(dynamic json)? parser,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl$endpoint');
+      final uri = _buildUri(endpoint);
       final response = await http.put(
         uri,
         headers: _buildHeaders(headers),
         body: body != null ? jsonEncode(body) : null,
       );
       return _handleStatusCode<T>(response, parser);
-    } on SocketException {
+    } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error. Please check your connection.',
+        errorMessage: 'Network error: ${e.message}. Please check your connection.',
+        isSuccess: false,
+      );
+    } catch (e) {
+      return ApiResponse<T>(
+        statusCode: 0,
+        errorMessage: 'An unexpected error occurred: ${e.toString()}',
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// PATCH Request
+  Future<ApiResponse<T>> patch<T>(
+    String endpoint, {
+    dynamic body,
+    Map<String, String>? headers,
+    T Function(dynamic json)? parser,
+  }) async {
+    try {
+      final uri = _buildUri(endpoint);
+      final response = await http.patch(
+        uri,
+        headers: _buildHeaders(headers),
+        body: body != null ? jsonEncode(body) : null,
+      );
+      return _handleStatusCode<T>(response, parser);
+    } on http.ClientException catch (e) {
+      return ApiResponse<T>(
+        statusCode: 0,
+        errorMessage: 'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -230,13 +271,13 @@ class ApiClient {
     T Function(dynamic json)? parser,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl$endpoint');
+      final uri = _buildUri(endpoint);
       final response = await http.delete(uri, headers: _buildHeaders(headers));
       return _handleStatusCode<T>(response, parser);
-    } on SocketException {
+    } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error. Please check your connection.',
+        errorMessage: 'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {

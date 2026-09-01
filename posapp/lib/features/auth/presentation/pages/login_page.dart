@@ -1,11 +1,72 @@
 import 'package:flutter/material.dart';
-import 'package:posapp/features/select_business/presentation/pages/select_business.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../Organisations/presentation/pages/select_business.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/auth_text_field.dart';
 import './signup_page.dart';
-/// Login screen. UI only — no auth wiring yet.
-class LoginPage extends StatelessWidget {
+import '../../data/auth_repository.dart';
+import '../../../../core/api/api_helper.dart';
+
+/// Login screen connected to Auth API.
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _authRepo = AuthRepository();
+  bool _isLoading = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorText = 'Please enter a valid email address.');
+      return;
+    }
+    if (password.isEmpty) {
+      setState(() => _errorText = 'Please enter your password.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    final response = await _authRepo.login(email: email, password: password);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response.isSuccess) {
+      ApiHelper.showSuccessSnackBar(context, 'Signed in successfully!');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
+      );
+    } else {
+      setState(() {
+        _errorText = response.errorMessage ?? 'Invalid email or password.';
+      });
+      ApiHelper.showErrorSnackBar(context, response.errorMessage);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +104,7 @@ class LoginPage extends StatelessWidget {
                         const _Wordmark(),
                         const SizedBox(height: 20),
                         Text(
-                          'Sign in',
+                          context.tr('auth.login'),
                           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -52,20 +113,36 @@ class LoginPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'to continue to KIVI',
+                          context.tr('auth.sign_in_to_continue'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 32),
-                        const AuthTextField(
-                          label: 'Email',
+                        AuthTextField(
+                          label: context.tr('auth.email'),
                           hintText: 'you@business.com',
                           keyboardType: TextInputType.emailAddress,
+                          controller: _emailCtrl,
                         ),
                         const SizedBox(height: 20),
-                        const AuthTextField(
-                          label: 'Password',
+                        AuthTextField(
+                          label: context.tr('auth.password'),
                           obscureText: true,
+                          controller: _passwordCtrl,
                         ),
+                        if (_errorText != null) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              _errorText!,
+                              style: const TextStyle(
+                                color: AppColors.error,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.centerRight,
@@ -77,22 +154,18 @@ class LoginPage extends StatelessWidget {
                               minimumSize: const Size(0, 0),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                            child: Text(
+                              context.tr('auth.forgot_password'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 28),
                         SizedBox(
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
-                              );
-                            },
+                            onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.inkTeal,
                               foregroundColor: Colors.white,
@@ -101,14 +174,23 @@ class LoginPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: Text(
-                              'Sign in',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    context.tr('auth.login'),
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -118,7 +200,7 @@ class LoginPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account?", style: Theme.of(context).textTheme.bodyMedium),
+                      Text(context.tr('auth.dont_have_account'), style: Theme.of(context).textTheme.bodyMedium),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -129,7 +211,7 @@ class LoginPage extends StatelessWidget {
                           foregroundColor: AppColors.inkTeal,
                           textStyle: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        child: const Text('Sign up'),
+                        child: Text(context.tr('auth.signup')),
                       ),
                     ],
                   ),

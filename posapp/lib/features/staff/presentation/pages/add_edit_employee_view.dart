@@ -1,32 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../../../core/api/api_helper.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../data/staff_repository.dart';
 
 class AddEditEmployeeView extends StatefulWidget {
-  const AddEditEmployeeView({super.key, this.employee});
+  const AddEditEmployeeView({super.key, this.employee, this.orgId});
 
-  final MockEmployee? employee;
+  final StaffUserProps? employee;
+  final String? orgId;
 
   @override
   State<AddEditEmployeeView> createState() => _AddEditEmployeeViewState();
 }
 
 class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
+  final _staffRepo = StaffRepository();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _contactCtrl;
-  late String _selectedLocationId;
-  late String _selectedPermSetId;
-
-  // PIN state
-  final List<TextEditingController> _pinCtrls =
-      List.generate(4, (_) => TextEditingController());
-  final List<TextEditingController> _confirmCtrls =
-      List.generate(4, (_) => TextEditingController());
-  final List<FocusNode> _pinFoci = List.generate(4, (_) => FocusNode());
-  final List<FocusNode> _confirmFoci = List.generate(4, (_) => FocusNode());
-  String _pinError = '';
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _passwordCtrl;
+  bool _isLoading = false;
 
   bool get _isEditing => widget.employee != null;
 
@@ -35,56 +30,49 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
     super.initState();
     final e = widget.employee;
     _nameCtrl = TextEditingController(text: e?.name ?? '');
-    _contactCtrl = TextEditingController(text: e?.contact ?? '');
-    _selectedLocationId = e?.locationId ?? mockLocations.first.id;
-    _selectedPermSetId =
-        e?.permissionSetId ?? mockPermissionSets.first.id;
-    if (_isEditing && e!.pin.length == 4) {
-      for (int i = 0; i < 4; i++) {
-        _pinCtrls[i].text = e.pin[i];
-        _confirmCtrls[i].text = e.pin[i];
-      }
-    }
+    _emailCtrl = TextEditingController(text: e?.email ?? '');
+    _phoneCtrl = TextEditingController(text: e?.phone ?? '');
+    _passwordCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _contactCtrl.dispose();
-    for (final c in [..._pinCtrls, ..._confirmCtrls]) {
-      c.dispose();
-    }
-    for (final f in [..._pinFoci, ..._confirmFoci]) {
-      f.dispose();
-    }
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
-  String get _pin => _pinCtrls.map((c) => c.text).join();
-  String get _confirmPin => _confirmCtrls.map((c) => c.text).join();
-
-  void _save() {
-    setState(() => _pinError = '');
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_pin.length < 4) {
-      setState(() => _pinError = 'Please enter a 4-digit PIN');
-      return;
-    }
-    if (_pin != _confirmPin) {
-      setState(() => _pinError = 'PINs do not match');
-      return;
-    }
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            _isEditing ? 'Employee updated.' : 'Employee added.'),
-        backgroundColor: AppColors.inkTeal,
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+
+    setState(() => _isLoading = true);
+
+    final dto = CreateStaffUserDto(
+      name: _nameCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
+      password: _passwordCtrl.text.isNotEmpty ? _passwordCtrl.text : 'Password@123',
     );
+
+    final res = await _staffRepo.createStaffUser(dto);
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (res.isSuccess) {
+      ApiHelper.showSuccessSnackBar(
+        context,
+        _isEditing ? 'Employee updated.' : 'Employee added successfully.',
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      ApiHelper.showErrorSnackBar(
+        context,
+        res.errorMessage ?? 'Failed to save employee.',
+      );
+    }
   }
 
   @override
@@ -96,7 +84,7 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? 'Edit Employee' : 'Add Employee',
+          _isEditing ? 'Edit Employee' : context.tr('staff.add_employee'),
           style: Theme.of(context)
               .textTheme
               .titleMedium
@@ -116,107 +104,103 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Details card
-                    _SectionCard(
-                      title: 'Employee details',
+                    _FormCard(
+                      title: 'Employee Details',
                       children: [
-                        _Label('Full Name *'),
+                        _FieldLabel('${context.tr('customers.name')} *'),
                         TextFormField(
                           controller: _nameCtrl,
                           textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                              hintText: 'e.g. Ashan Perera'),
+                          decoration:
+                              const InputDecoration(hintText: 'e.g. Ashan Perera'),
                           validator: (v) =>
-                              (v == null || v.trim().isEmpty)
-                                  ? 'Enter name'
-                                  : null,
+                              (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                         ),
                         const SizedBox(height: 16),
-                        _Label('Contact Number'),
+                        _FieldLabel('${context.tr('auth.email')} *'),
                         TextFormField(
-                          controller: _contactCtrl,
+                          controller: _emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration:
+                              const InputDecoration(hintText: 'e.g. ashan@store.lk'),
+                          validator: (v) => (v == null || !v.contains('@'))
+                              ? 'Valid email is required'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        _FieldLabel(context.tr('customers.phone')),
+                        TextFormField(
+                          controller: _phoneCtrl,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                              hintText: '+94 71 234 5678'),
+                          decoration:
+                              const InputDecoration(hintText: '+94 77 123 4567'),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Assignment card
-                    _SectionCard(
-                      title: 'Assignment',
-                      children: [
-                        _Label('Location *'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedLocationId,
-                          items: mockLocations
-                              .map((l) => DropdownMenuItem(
-                                  value: l.id, child: Text(l.name)))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedLocationId = v!),
-                          decoration: const InputDecoration(),
-                        ),
-                        const SizedBox(height: 16),
-                        _Label('Permission Set *'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedPermSetId,
-                          items: mockPermissionSets
-                              .map((p) => DropdownMenuItem(
-                                  value: p.id, child: Text(p.name)))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedPermSetId = v!),
-                          decoration: const InputDecoration(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // PIN card
-                    _SectionCard(
-                      title: 'POS PIN',
-                      children: [
-                        _Label('Set PIN'),
-                        _PinRow(
-                            controllers: _pinCtrls, focusNodes: _pinFoci),
-                        const SizedBox(height: 16),
-                        _Label('Confirm PIN'),
-                        _PinRow(
-                            controllers: _confirmCtrls,
-                            focusNodes: _confirmFoci),
-                        if (_pinError.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(_pinError,
-                              style: const TextStyle(
-                                  color: AppColors.error, fontSize: 12)),
+                        if (!_isEditing) ...[
+                          const SizedBox(height: 16),
+                          _FieldLabel('${context.tr('auth.password')} *'),
+                          TextFormField(
+                            controller: _passwordCtrl,
+                            obscureText: true,
+                            decoration:
+                                const InputDecoration(hintText: 'Set temporary password'),
+                            validator: (v) =>
+                                (v == null || v.length < 6) ? 'At least 6 characters required' : null,
+                          ),
                         ],
                       ],
                     ),
                     const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.inkTeal,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.slate,
+                              side: const BorderSide(
+                                  color: AppColors.hairline, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              minimumSize: const Size(0, 52),
+                            ),
+                            child: Text(context.tr('common.cancel')),
+                          ),
                         ),
-                        child: Text(
-                          _isEditing ? 'Save Changes' : 'Add Employee',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _save,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.inkTeal,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              minimumSize: const Size(0, 52),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : Text(
+                                    _isEditing ? 'Update Employee' : context.tr('common.save'),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -229,55 +213,8 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
   }
 }
 
-class _PinRow extends StatelessWidget {
-  const _PinRow({required this.controllers, required this.focusNodes});
-
-  final List<TextEditingController> controllers;
-  final List<FocusNode> focusNodes;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: List.generate(
-        4,
-        (i) => Padding(
-          padding: EdgeInsets.only(right: i < 3 ? 12 : 0),
-          child: SizedBox(
-            width: 52,
-            child: TextField(
-              controller: controllers[i],
-              focusNode: focusNodes[i],
-              obscureText: true,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              maxLength: 1,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontSize: 20),
-              decoration: const InputDecoration(
-                counterText: '',
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 14),
-              ),
-              onChanged: (v) {
-                if (v.isNotEmpty && i < 3) {
-                  FocusScope.of(context)
-                      .requestFocus(focusNodes[i + 1]);
-                }
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.children});
+class _FormCard extends StatelessWidget {
+  const _FormCard({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
@@ -299,7 +236,7 @@ class _SectionCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontSize: 16)),
+                  ?.copyWith(fontSize: 15)),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -308,8 +245,8 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _Label extends StatelessWidget {
-  const _Label(this.text);
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
 
   final String text;
 
@@ -320,11 +257,11 @@ class _Label extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.ink,
-            fontWeight: FontWeight.bold,
-            fontSize: 13),
+              color: AppColors.ink,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
       ),
     );
   }
 }
-

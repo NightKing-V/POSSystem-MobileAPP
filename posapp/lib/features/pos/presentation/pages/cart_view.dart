@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../billing/bill_calculator.dart';
 import '../../domain/models/cart_item.dart';
@@ -9,6 +9,11 @@ import '../widgets/payment_bar.dart';
 import '../../../inventory/presentation/widgets/product_grid.dart';
 import '../../../inventory/presentation/widgets/product_search_bar.dart';
 
+import '../../data/bills_repository.dart';
+import '../../../inventory/data/inventory_repository.dart';
+import '../../../../core/api/token_storage.dart';
+import '../../../../core/api/api_helper.dart';
+
 /// Breakpoint in logical pixels separating phone (narrow) from tablet/desktop.
 const double _kWideBreakpoint = 600.0;
 
@@ -16,26 +21,30 @@ const double _kWideBreakpoint = 600.0;
 const double _kCartPaneWidth = 380.0;
 
 // =============================================================================
-// CartView — self-contained cashier billing feature
+// CartView — cashier billing feature connected to API
 // =============================================================================
 
 /// The cashier billing screen.
-///
-/// Owns all cart, billing, and UI state internally via [setState].
-/// No data flows in or out through the constructor — the parent simply
-/// calls `const CartView()`.
-///
-/// When a real backend is available, swap [Product.mockProducts] with a
-/// repository call and persist [CartItem] mutations through a service layer;
-/// all the calculation logic already lives in [BillCalculator].
 class CartView extends StatefulWidget {
-  const CartView({super.key});
+  const CartView({
+    super.key,
+    this.orgId,
+    this.locationId,
+  });
+
+  final String? orgId;
+  final String? locationId;
 
   @override
   State<CartView> createState() => _CartViewState();
 }
 
 class _CartViewState extends State<CartView> {
+  final _billsRepo = BillsRepository();
+  final _inventoryRepo = InventoryRepository();
+
+  List<Product> _allProducts = Product.mockProducts;
+
   // ── Cart ──────────────────────────────────────────────────────────────────
   /// Pre-populated with sample items so the UI is immediately demonstrable.
   final List<CartItem> _cartItems = [
@@ -68,6 +77,17 @@ class _CartViewState extends State<CartView> {
     super.initState();
     _billDiscountCtrl = TextEditingController(text: '0');
     _taxCtrl = TextEditingController(text: '15');
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    final response = await _inventoryRepo.fetchProducts();
+    if (!mounted) return;
+    if (response.isSuccess && response.data != null && response.data!.isNotEmpty) {
+      setState(() {
+        _allProducts = response.data!;
+      });
+    }
   }
 
   @override
@@ -81,9 +101,9 @@ class _CartViewState extends State<CartView> {
   // ── Derived state ──────────────────────────────────────────────────────────
 
   List<Product> get _filteredProducts {
-    if (_searchQuery.isEmpty) return Product.mockProducts;
+    if (_searchQuery.isEmpty) return _allProducts;
     final q = _searchQuery.toLowerCase();
-    return Product.mockProducts
+    return _allProducts
         .where((p) =>
             p.name.toLowerCase().contains(q) ||
             p.sku.toLowerCase().contains(q) ||
@@ -200,9 +220,47 @@ class _CartViewState extends State<CartView> {
     );
   }
 
-  void _onCharge() {
+  Future<void> _onCharge() async {
+    if (_cartItems.isEmpty) {
+      ApiHelper.showErrorSnackBar(context, 'Cart is empty');
+      return;
+    }
+
     final method = _paymentMethod.name[0].toUpperCase() +
         _paymentMethod.name.substring(1);
+
+    final currentUser = TokenStorage.getCurrentUser();
+    final cashierId = currentUser?['id']?.toString() ?? '00000000-0000-0000-0000-000000000000';
+    final orgId = widget.orgId ?? '00000000-0000-0000-0000-000000000000';
+    final locationId = widget.locationId ?? '00000000-0000-0000-0000-000000000000';
+
+    final billDto = CreateBillDto(
+      orgId: orgId,
+      locationId: locationId,
+      cashierId: cashierId,
+      taxes: [
+        BillTaxDto(name: 'VAT', rate: _taxPct, isActive: true),
+      ],
+      items: _cartItems
+          .map((item) => BillItemDto(
+                productId: item.product.id,
+                quantity: item.quantity,
+                notes: item.itemDiscountPct > 0
+                    ? 'Item discount: ${item.itemDiscountPct}%'
+                    : null,
+              ))
+          .toList(),
+      payments: [
+        BillPaymentDto(
+          paymentMethod: _paymentMethod.name.toUpperCase(),
+          amount: _grandTotal,
+        ),
+      ],
+    );
+
+    // Call API in background
+    _billsRepo.createBill(billDto);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

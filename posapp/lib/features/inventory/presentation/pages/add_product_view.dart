@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../domain/category_repository.dart';
+import '../../data/inventory_repository.dart';
 import '../widgets/add_category_tab.dart';
 
 /// Full rewrite rationale: the TabBar/DefaultTabController is a root-level
@@ -165,31 +167,33 @@ class _AddProductTabState extends State<_AddProductTab> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text('${_nameCtrl.text} added to inventory!',
-                  overflow: TextOverflow.ellipsis),
-            ),
-          ]),
-          backgroundColor: AppColors.inkTeal,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      final repo = InventoryRepository();
+      final price = double.tryParse(_priceCtrl.text) ?? 0.0;
+      final dto = CreateProductDto(
+        name: _nameCtrl.text.trim(),
+        subcategoryId: _selectedCategoryId ?? '00000000-0000-0000-0000-000000000000',
+        sku: _skuCtrl.text.isNotEmpty ? _skuCtrl.text.trim() : null,
+        initialPrice: price > 0 ? price : null,
       );
-      _formKey.currentState!.reset();
-      _nameCtrl.clear();
-      _skuCtrl.clear();
-      _costCtrl.clear();
-      _priceCtrl.clear();
-      _stockCtrl.clear();
-      setState(() => _selectedCategoryId = null);
+
+      final res = await repo.createProduct(dto);
+
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        ApiHelper.showSuccessSnackBar(context, '${_nameCtrl.text} added to inventory!');
+        _formKey.currentState!.reset();
+        _nameCtrl.clear();
+        _skuCtrl.clear();
+        _costCtrl.clear();
+        _priceCtrl.clear();
+        _stockCtrl.clear();
+        setState(() => _selectedCategoryId = null);
+      } else {
+        ApiHelper.showErrorSnackBar(context, res.errorMessage ?? 'Failed to add product.');
+      }
     }
   }
 

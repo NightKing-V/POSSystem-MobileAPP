@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
+import '../../data/inventory_repository.dart';
+import '../../../../core/api/api_helper.dart';
+
 class AddProductForm extends StatefulWidget {
   const AddProductForm({
     super.key,
@@ -14,6 +17,7 @@ class AddProductForm extends StatefulWidget {
 }
 
 class _AddProductFormState extends State<AddProductForm> {
+  final _inventoryRepo = InventoryRepository();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _skuController = TextEditingController();
@@ -22,6 +26,7 @@ class _AddProductFormState extends State<AddProductForm> {
   final _stockController = TextEditingController();
 
   String? _selectedCategory;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -58,39 +63,43 @@ class _AddProductFormState extends State<AddProductForm> {
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_outline, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${_nameController.text} added to inventory!',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.inkTeal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      setState(() => _isLoading = true);
+
+      final price = double.tryParse(_priceController.text) ?? 0.0;
+      final dto = CreateProductDto(
+        name: _nameController.text.trim(),
+        subcategoryId: '00000000-0000-0000-0000-000000000000', // Default category UUID
+        sku: _skuController.text.isNotEmpty ? _skuController.text.trim() : null,
+        initialPrice: price > 0 ? price : null,
       );
 
-      _formKey.currentState!.reset();
-      _nameController.clear();
-      _skuController.clear();
-      _costController.clear();
-      _priceController.clear();
-      _stockController.clear();
-      setState(() {
-        _selectedCategory = null;
-      });
+      final response = await _inventoryRepo.createProduct(dto);
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (response.isSuccess) {
+        ApiHelper.showSuccessSnackBar(
+          context,
+          '${_nameController.text} added to inventory!',
+        );
+        _formKey.currentState!.reset();
+        _nameController.clear();
+        _skuController.clear();
+        _costController.clear();
+        _priceController.clear();
+        _stockController.clear();
+        setState(() {
+          _selectedCategory = null;
+        });
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          response.errorMessage ?? 'Failed to add product.',
+        );
+      }
     }
   }
 
@@ -294,7 +303,7 @@ class _AddProductFormState extends State<AddProductForm> {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _submitForm,
+                    onPressed: _isLoading ? null : _submitForm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.inkTeal,
                       foregroundColor: Colors.white,
@@ -303,13 +312,22 @@ class _AddProductFormState extends State<AddProductForm> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: Text(
-                      'Add Product to Inventory',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            'Add Product to Inventory',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
-                    ),
                   ),
                 ),
               ],

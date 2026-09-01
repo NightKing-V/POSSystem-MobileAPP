@@ -1,49 +1,72 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 
+import '../../data/customers_repository.dart';
+import '../../../../core/api/api_helper.dart';
+
 class AddCustomerView extends StatefulWidget {
-  const AddCustomerView({super.key});
+  const AddCustomerView({super.key, this.orgId});
+
+  final String? orgId;
 
   @override
   State<AddCustomerView> createState() => _AddCustomerViewState();
 }
 
 class _AddCustomerViewState extends State<AddCustomerView> {
+  final _customersRepo = CustomersRepository();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
-  late final TextEditingController _nexusCardCtrl;
-  late final TextEditingController _otherCardCtrl;
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _addressCtrl;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController();
     _phoneCtrl = TextEditingController();
-    _nexusCardCtrl = TextEditingController();
-    _otherCardCtrl = TextEditingController();
+    _emailCtrl = TextEditingController();
+    _addressCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
-    _nexusCardCtrl.dispose();
-    _otherCardCtrl.dispose();
+    _emailCtrl.dispose();
+    _addressCtrl.dispose();
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Customer added successfully.'),
-          backgroundColor: AppColors.inkTeal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      setState(() => _isLoading = true);
+
+      final dto = CreateCustomerDto(
+        orgId: widget.orgId ?? '00000000-0000-0000-0000-000000000000',
+        fullName: _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        email: _emailCtrl.text.isNotEmpty ? _emailCtrl.text.trim() : null,
+        address: _addressCtrl.text.isNotEmpty ? _addressCtrl.text.trim() : null,
       );
+
+      final response = await _customersRepo.createCustomer(dto);
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (response.isSuccess) {
+        ApiHelper.showSuccessSnackBar(context, 'Customer added successfully.');
+        Navigator.of(context).pop(true);
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          response.errorMessage ?? context.tr('common.error'),
+        );
+      }
     }
   }
 
@@ -56,7 +79,7 @@ class _AddCustomerViewState extends State<AddCustomerView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          'Add Customer',
+          context.tr('customers.add_customer'),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
@@ -73,40 +96,40 @@ class _AddCustomerViewState extends State<AddCustomerView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _FormCard(
-                      title: 'Customer Details',
+                      title: context.tr('customers.customer_details'),
                       children: [
-                        _FieldLabel('Name *'),
+                        _FieldLabel(context.tr('customers.name')),
                         TextFormField(
                           controller: _nameCtrl,
                           textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(hintText: 'e.g. Jane Doe'),
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter customer name' : null,
+                          decoration: InputDecoration(hintText: context.tr('customers.name_hint')),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? context.tr('customers.name_required') : null,
                         ),
                         const SizedBox(height: 16),
-                        _FieldLabel('Phone Number *'),
+                        _FieldLabel(context.tr('customers.phone')),
                         TextFormField(
                           controller: _phoneCtrl,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(hintText: '+94 11 234 5678'),
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter phone number' : null,
+                          decoration: InputDecoration(hintText: context.tr('customers.phone_hint')),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? context.tr('customers.phone_required') : null,
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     _FormCard(
-                      title: 'Membership & Cards',
+                      title: context.tr('customers.contact_and_address'),
                       children: [
-                        _FieldLabel('Nexus Card Number *'),
+                        _FieldLabel(context.tr('customers.email')),
                         TextFormField(
-                          controller: _nexusCardCtrl,
-                          decoration: const InputDecoration(hintText: 'e.g. 1234 5678 9012'),
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Nexus card number' : null,
+                          controller: _emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(hintText: context.tr('customers.email_hint')),
                         ),
                         const SizedBox(height: 16),
-                        _FieldLabel('Other Card Number (Optional)'),
+                        _FieldLabel(context.tr('customers.address')),
                         TextFormField(
-                          controller: _otherCardCtrl,
-                          decoration: const InputDecoration(hintText: 'e.g. 9876 5432 1098'),
+                          controller: _addressCtrl,
+                          decoration: InputDecoration(hintText: context.tr('customers.address_hint')),
                         ),
                       ],
                     ),
@@ -122,14 +145,14 @@ class _AddCustomerViewState extends State<AddCustomerView> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               minimumSize: const Size(0, 52),
                             ),
-                            child: const Text('Cancel'),
+                            child: Text(context.tr('common.cancel')),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           flex: 2,
                           child: ElevatedButton(
-                            onPressed: _save,
+                            onPressed: _isLoading ? null : _save,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.inkTeal,
                               foregroundColor: Colors.white,
@@ -137,13 +160,22 @@ class _AddCustomerViewState extends State<AddCustomerView> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               minimumSize: const Size(0, 52),
                             ),
-                            child: Text(
-                              'Save Customer',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : Text(
+                                    context.tr('customers.save_customer'),
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
-                            ),
                           ),
                         ),
                       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import './dashboard_home_view.dart';
 import '../../../inventory/presentation/pages/add_product_view.dart';
@@ -12,9 +13,16 @@ import './sidebar.dart';
 /// The main landing screen after a business/branch is selected.
 /// Featuring a bottom navigation bar to switch between Home, Add Product, Cart, and Settings.
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key, required this.businessName});
+  const DashboardPage({
+    super.key,
+    required this.businessName,
+    this.orgId,
+    this.locationId,
+  });
 
   final String businessName;
+  final String? orgId;
+  final String? locationId;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -23,31 +31,31 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
 
-  String _getAppBarTitle() {
+  String _getAppBarTitle(BuildContext context) {
     switch (_selectedIndex) {
       case 0:
         return widget.businessName;
       case 1:
-        return 'Add Product';
+        return context.tr('inventory.add_product');
       case 2:
-        return 'Active Cart';
+        return context.tr('pos.cart');
       case 3:
-        return 'Settings';
+        return context.tr('settings.title');
       default:
         return widget.businessName;
     }
   }
 
-  String _getAppBarSubtitle() {
+  String _getAppBarSubtitle(BuildContext context) {
     switch (_selectedIndex) {
       case 0:
-        return 'Dashboard';
+        return context.tr('dashboard.title');
       case 1:
-        return 'Create inventory items';
+        return context.tr('inventory.title');
       case 2:
-        return 'Cashier billing';
+        return context.tr('pos.title');
       case 3:
-        return 'App configuration';
+        return context.tr('settings.general');
       default:
         return '';
     }
@@ -86,7 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Quick Action: "$actionLabel" tapped (Feature under construction).'),
+                  content: Text('Quick Action: "$actionLabel" tapped.'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -96,8 +104,11 @@ class _DashboardPageState extends State<DashboardPage> {
       case 1:
         return const AddProductView();
       case 2:
-        // CartView is fully self-contained — owns its own cart state.
-        return const CartView();
+        // CartView connected to real Org & Location
+        return CartView(
+          orgId: widget.orgId,
+          locationId: widget.locationId,
+        );
       case 3:
         return SettingsView(businessName: widget.businessName);
       default:
@@ -136,11 +147,11 @@ class _DashboardPageState extends State<DashboardPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _getAppBarTitle(),
+              _getAppBarTitle(context),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
             ),
             Text(
-              _getAppBarSubtitle(),
+              _getAppBarSubtitle(context),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
             ),
           ],
@@ -179,26 +190,26 @@ class _DashboardPageState extends State<DashboardPage> {
                 unselectedLabelStyle: const TextStyle(fontSize: 12),
                 type: BottomNavigationBarType.fixed,
                 elevation: 0,
-                items: const [
+                items: [
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.dashboard_outlined),
-                    activeIcon: Icon(Icons.dashboard),
-                    label: 'Home',
+                    icon: const Icon(Icons.dashboard_outlined),
+                    activeIcon: const Icon(Icons.dashboard),
+                    label: context.tr('dashboard.title'),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.add_circle_outline),
-                    activeIcon: Icon(Icons.add_circle),
-                    label: 'Add Product',
+                    icon: const Icon(Icons.add_circle_outline),
+                    activeIcon: const Icon(Icons.add_circle),
+                    label: context.tr('inventory.add_product'),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.shopping_cart_outlined),
-                    activeIcon: Icon(Icons.shopping_cart),
-                    label: 'Cart',
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    activeIcon: const Icon(Icons.shopping_cart),
+                    label: context.tr('pos.cart'),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.settings_outlined),
-                    activeIcon: Icon(Icons.settings),
-                    label: 'Settings',
+                    icon: const Icon(Icons.settings_outlined),
+                    activeIcon: const Icon(Icons.settings),
+                    label: context.tr('settings.title'),
                   ),
                 ],
               ),

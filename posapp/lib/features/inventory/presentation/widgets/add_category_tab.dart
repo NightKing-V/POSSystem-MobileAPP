@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/category_repository.dart';
 
+import '../../data/inventory_repository.dart';
+
 /// Tab 2 — Add Category.
 /// Standalone widget so add_product_view.dart stays under 250 lines.
 class AddCategoryTab extends StatefulWidget {
@@ -30,6 +32,7 @@ class AddCategoryTab extends StatefulWidget {
 }
 
 class _AddCategoryTabState extends State<AddCategoryTab> {
+  final _inventoryRepo = InventoryRepository();
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   int _selectedSwatch = 0;
@@ -50,13 +53,22 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
 
   Future<void> _refresh() async {
     final cats = await CategoryRepository.instance.getAll();
-    if (mounted) setState(() { _categories = cats; _loading = false; });
+    if (!mounted) return;
+    setState(() {
+      _categories = cats;
+      _loading = false;
+    });
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final catName = _nameCtrl.text.trim();
+
+    // Call backend API
+    _inventoryRepo.createCategory(CreateCategoryDto(name: catName));
+
     await CategoryRepository.instance.add(
-      name: _nameCtrl.text,
+      name: catName,
       colorIndex: _selectedSwatch,
     );
     _formKey.currentState!.reset();
@@ -64,20 +76,19 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
     setState(() => _selectedSwatch = 0);
     widget.onCategoryAdded();
     await _refresh();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle_outline, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Category created!'),
-          ]),
-          backgroundColor: AppColors.inkTeal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(children: [
+          Icon(Icons.check_circle_outline, color: Colors.white),
+          SizedBox(width: 8),
+          Text('Category created!'),
+        ]),
+        backgroundColor: AppColors.inkTeal,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   Future<void> _delete(String id) async {

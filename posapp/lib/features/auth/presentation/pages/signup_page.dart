@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/api/api_helper.dart';
+import '../../data/auth_repository.dart';
+import '../../../Organisations/presentation/pages/select_business.dart';
 import '../widgets/auth_text_field.dart';
 import './login_page.dart';
 
@@ -141,10 +144,29 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _createBusiness() async {
-    // Placeholder for the real account/business creation call.
-    await Future.delayed(const Duration(milliseconds: 1400));
+    final authRepo = AuthRepository();
+    final dto = RegisterDto(
+      email: _data.email,
+      password: _data.password,
+      phone: _data.phone,
+      businessName: _data.businessName,
+      businessType: _data.businessType,
+    );
+
+    final response = await authRepo.register(dto);
+
     if (!mounted || _step != _Step.creating) return;
-    _goTo(_Step.verify);
+
+    if (response.isSuccess) {
+      ApiHelper.showSuccessSnackBar(context, 'Account created! Please verify your email.');
+      _goTo(_Step.verify);
+    } else {
+      ApiHelper.showErrorSnackBar(context, response.errorMessage);
+      _goTo(_Step.businessName);
+      setState(() {
+        _errorText = response.errorMessage ?? 'Registration failed. Please try again.';
+      });
+    }
   }
 
   @override
@@ -207,7 +229,7 @@ class _SignupPageState extends State<SignupPage> {
                             },
                             layoutBuilder: (currentChild, previousChildren) => Stack(
                               alignment: Alignment.topCenter,
-                              children: [...previousChildren, if (currentChild != null) currentChild],
+                              children: [...previousChildren, ?currentChild],
                             ),
                             child: KeyedSubtree(
                               key: ValueKey(_step),
@@ -529,11 +551,49 @@ class _VerifyEmailView extends StatefulWidget {
 
 class _VerifyEmailViewState extends State<_VerifyEmailView> {
   final _otpCtrl = TextEditingController();
+  final _authRepo = AuthRepository();
+  bool _isLoading = false;
+  String? _errorText;
 
   @override
   void dispose() {
     _otpCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleVerify() async {
+    final token = _otpCtrl.text.trim();
+    if (token.length < 6) {
+      setState(() => _errorText = 'Please enter a valid 6-digit OTP code');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    final response = await _authRepo.verifyOtp(
+      VerifyOtpDto(email: widget.email, token: token),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response.isSuccess) {
+      ApiHelper.showSuccessSnackBar(context, 'Email verified successfully!');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
+      );
+    } else {
+      setState(() {
+        _errorText = response.errorMessage ?? 'Verification failed. Please try again.';
+      });
+      ApiHelper.showErrorSnackBar(context, response.errorMessage);
+    }
   }
 
   @override
@@ -576,26 +636,40 @@ class _VerifyEmailViewState extends State<_VerifyEmailView> {
           controller: _otpCtrl,
           keyboardType: TextInputType.number,
         ),
+        if (_errorText != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _errorText!,
+            style: const TextStyle(color: AppColors.error, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
         const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: widget.onContinue,
+            onPressed: _isLoading ? null : _handleVerify,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text(
-              "Verify and Continue",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                  )
+                : Text(
+                    "Verify and Continue",
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 16),

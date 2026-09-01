@@ -1,30 +1,52 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/models/supplier_mock_data.dart';
-import '../widgets/supplier_card.dart';
+import '../../data/suppliers_repository.dart';
 import './add_edit_supplier_view.dart';
-import './supplier_detail_view.dart';
 
 class SuppliersListView extends StatefulWidget {
-  const SuppliersListView({super.key});
+  const SuppliersListView({super.key, this.orgId});
+
+  final String? orgId;
 
   @override
   State<SuppliersListView> createState() => _SuppliersListViewState();
 }
 
 class _SuppliersListViewState extends State<SuppliersListView> {
+  final _suppliersRepo = SuppliersRepository();
   String _search = '';
   final TextEditingController _searchCtrl = TextEditingController();
+  List<SupplierProps> _suppliers = [];
+  bool _isLoading = false;
 
-  List<Vendor> get _filtered {
-    if (_search.isEmpty) return mockVendors;
+  @override
+  void initState() {
+    super.initState();
+    _loadSuppliers();
+  }
+
+  Future<void> _loadSuppliers() async {
+    setState(() => _isLoading = true);
+    final response = await _suppliersRepo.fetchSuppliers(orgId: widget.orgId);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (response.isSuccess && response.data != null) {
+        _suppliers = response.data!;
+      }
+    });
+  }
+
+  List<SupplierProps> get _filtered {
+    if (_search.isEmpty) return _suppliers;
     final q = _search.toLowerCase();
-    return mockVendors
+    return _suppliers
         .where((v) =>
             v.name.toLowerCase().contains(q) ||
-            v.contactPerson.toLowerCase().contains(q) ||
-            v.phone.contains(q) ||
-            v.email.toLowerCase().contains(q))
+            (v.contactPerson != null && v.contactPerson!.toLowerCase().contains(q)) ||
+            (v.phone != null && v.phone!.contains(q)) ||
+            (v.email != null && v.email!.toLowerCase().contains(q)))
         .toList();
   }
 
@@ -36,7 +58,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
 
   @override
   Widget build(BuildContext context) {
-    final vendors = _filtered;
+    final list = _filtered;
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -48,12 +70,12 @@ class _SuppliersListViewState extends State<SuppliersListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Suppliers',
+            Text(context.tr('suppliers.title'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${mockVendors.length} vendors',
+            Text('${list.length} suppliers',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -74,7 +96,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                     controller: _searchCtrl,
                     onChanged: (v) => setState(() => _search = v),
                     decoration: InputDecoration(
-                      hintText: 'Search suppliers…',
+                      hintText: context.tr('common.search'),
                       prefixIcon: const Icon(Icons.search_rounded,
                           color: AppColors.slate, size: 20),
                       suffixIcon: _search.isNotEmpty
@@ -92,26 +114,49 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: vendors.isEmpty
-                      ? const _EmptyState()
-                      : ListView.separated(
-                          padding:
-                              const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                          itemCount: vendors.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (_, i) => SupplierCard(
-                            vendor: vendors[i],
-                            linkedProductCount:
-                                vendorLinkedProductCount(vendors[i].id),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(fullscreenDialog: true, 
-                                builder: (_) =>
-                                    SupplierDetailView(vendor: vendors[i]),
-                              ),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : list.isEmpty
+                          ? const _EmptyState()
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                              itemCount: list.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 10),
+                              itemBuilder: (_, i) {
+                                final s = list[i];
+                                return Card(
+                                  margin: EdgeInsets.zero,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: AppColors.hairline.withValues(alpha: 0.6),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
+                                      child: Text(
+                                        s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
+                                        style: const TextStyle(
+                                          color: AppColors.inkTeal,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      s.name,
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    subtitle: Text(
+                                      s.contactPerson ?? s.phone ?? s.email ?? '',
+                                      style: const TextStyle(color: AppColors.slate, fontSize: 13),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                        ),
                 ),
               ],
             ),
@@ -119,14 +164,22 @@ class _SuppliersListViewState extends State<SuppliersListView> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditSupplierView()),
-        ),
+        onPressed: () async {
+          final res = await Navigator.of(context).push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => const AddEditSupplierView(),
+            ),
+          );
+          if (res == true) {
+            _loadSuppliers();
+          }
+        },
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Add Supplier',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(context.tr('suppliers.add_supplier'),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -146,13 +199,13 @@ class _EmptyState extends StatelessWidget {
             Icon(Icons.local_shipping_outlined,
                 size: 48, color: AppColors.slate.withAlpha(80)),
             const SizedBox(height: 16),
-            Text('No suppliers yet',
+            Text(context.tr('suppliers.no_suppliers'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 16)),
             const SizedBox(height: 8),
-            Text('Add your first vendor to start managing\npurchase orders.',
+            Text(context.tr('suppliers.no_suppliers_hint'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context)
                     .textTheme

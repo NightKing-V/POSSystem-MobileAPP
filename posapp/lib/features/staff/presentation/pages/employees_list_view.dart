@@ -1,28 +1,53 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../data/staff_repository.dart';
 import './add_edit_employee_view.dart';
 
 class EmployeesListView extends StatefulWidget {
-  const EmployeesListView({super.key});
+  const EmployeesListView({super.key, this.orgId});
+
+  final String? orgId;
 
   @override
   State<EmployeesListView> createState() => _EmployeesListViewState();
 }
 
 class _EmployeesListViewState extends State<EmployeesListView> {
+  final _staffRepo = StaffRepository();
   String _search = '';
   final TextEditingController _searchCtrl = TextEditingController();
+  List<StaffUserProps> _employees = [];
+  bool _isLoading = false;
 
-  List<MockEmployee> get _filtered {
-    if (_search.isEmpty) return mockEmployees;
+  @override
+  void initState() {
+    super.initState();
+    _loadStaff();
+  }
+
+  Future<void> _loadStaff() async {
+    setState(() => _isLoading = true);
+    final response = await _staffRepo.fetchStaffUsers(orgId: widget.orgId);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (response.isSuccess && response.data != null) {
+        _employees = response.data!;
+      }
+    });
+  }
+
+  List<StaffUserProps> get _filtered {
+    if (_search.isEmpty) return _employees;
     final q = _search.toLowerCase();
-    return mockEmployees
+    return _employees
         .where((e) =>
             e.name.toLowerCase().contains(q) ||
-            e.contact.toLowerCase().contains(q) ||
-            locationName(e.locationId).toLowerCase().contains(q) ||
-            permissionSetName(e.permissionSetId).toLowerCase().contains(q))
+            e.email.toLowerCase().contains(q) ||
+            (e.phone != null && e.phone!.contains(q)) ||
+            (e.role != null && e.role!.toLowerCase().contains(q)) ||
+            (e.locationName != null && e.locationName!.toLowerCase().contains(q)))
         .toList();
   }
 
@@ -46,12 +71,12 @@ class _EmployeesListViewState extends State<EmployeesListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Employees',
+            Text(context.tr('staff.title'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${mockEmployees.length} staff members',
+            Text('${employees.length} staff members',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -68,13 +93,12 @@ class _EmployeesListViewState extends State<EmployeesListView> {
               children: [
                 // Search bar
                 Padding(
-                  padding:
-                      const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                   child: TextField(
                     controller: _searchCtrl,
                     onChanged: (v) => setState(() => _search = v),
                     decoration: InputDecoration(
-                      hintText: 'Search by name, role or location…',
+                      hintText: context.tr('common.search'),
                       prefixIcon: const Icon(Icons.search_rounded,
                           color: AppColors.slate, size: 20),
                       suffixIcon: _search.isNotEmpty
@@ -93,24 +117,19 @@ class _EmployeesListViewState extends State<EmployeesListView> {
                 const SizedBox(height: 12),
 
                 Expanded(
-                  child: employees.isEmpty
-                      ? const _EmptySearch()
-                      : ListView.separated(
-                          padding:
-                              const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                          itemCount: employees.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, i) => _EmployeeTile(
-                            employee: employees[i],
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(fullscreenDialog: true, 
-                                builder: (_) => AddEditEmployeeView(
-                                    employee: employees[i]),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : employees.isEmpty
+                          ? const _EmptySearch()
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                              itemCount: employees.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 10),
+                              itemBuilder: (context, i) => _EmployeeTile(
+                                employee: employees[i],
+                                onTap: () {},
                               ),
                             ),
-                          ),
-                        ),
                 ),
               ],
             ),
@@ -124,8 +143,8 @@ class _EmployeesListViewState extends State<EmployeesListView> {
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add_outlined),
-        label: const Text('Add Employee',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(context.tr('staff.add_employee'),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -134,7 +153,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
 class _EmployeeTile extends StatelessWidget {
   const _EmployeeTile({required this.employee, required this.onTap});
 
-  final MockEmployee employee;
+  final StaffUserProps employee;
   final VoidCallback onTap;
 
   @override
@@ -162,7 +181,7 @@ class _EmployeeTile extends StatelessWidget {
               radius: 22,
               backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
               child: Text(
-                initials,
+                initials.isNotEmpty ? initials : 'S',
                 style: const TextStyle(
                     color: AppColors.inkTeal,
                     fontWeight: FontWeight.bold,
@@ -178,23 +197,36 @@ class _EmployeeTile extends StatelessWidget {
                     children: [
                       Text(employee.name,
                           style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
-                      const SizedBox(width: 8),
-                      _RoleBadge(
-                          label: permissionSetName(employee.permissionSetId)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.ink)),
+                      const Spacer(),
+                      _StatusDot(active: employee.isActive),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${locationName(employee.locationId)}  ·  ${employee.contact}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.slate),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(employee.role ?? 'Employee',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.inkTeal,
+                              fontWeight: FontWeight.w600)),
+                      if (employee.locationName != null) ...[
+                        const Text(' · ',
+                            style: TextStyle(
+                                fontSize: 12, color: AppColors.slate)),
+                        Text(employee.locationName!,
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.slate)),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            _StatusDot(isActive: employee.isActive),
+            const Icon(Icons.chevron_right, color: AppColors.slate, size: 18),
           ],
         ),
       ),
@@ -202,41 +234,41 @@ class _EmployeeTile extends StatelessWidget {
   }
 }
 
-class _RoleBadge extends StatelessWidget {
-  const _RoleBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.marigold.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: AppColors.inkTeal)),
-    );
-  }
-}
-
 class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.isActive});
-
-  final bool isActive;
+  const _StatusDot({required this.active});
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 8,
-      height: 8,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isActive ? const Color(0xFF16A34A) : AppColors.slate,
+        color: active
+            ? const Color(0xFF0F9D58).withValues(alpha: 0.1)
+            : AppColors.slate.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: active ? const Color(0xFF0F9D58) : AppColors.slate,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            active ? 'Active' : 'Inactive',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: active ? const Color(0xFF0F9D58) : AppColors.slate,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -248,20 +280,28 @@ class _EmptySearch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off_rounded,
-              size: 40, color: AppColors.slate.withValues(alpha: 0.4)),
-          const SizedBox(height: 10),
-          Text('No employees found',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontSize: 14)),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_search_outlined,
+                size: 48, color: AppColors.slate.withAlpha(80)),
+            const SizedBox(height: 16),
+            Text('No staff found',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontSize: 16)),
+            const SizedBox(height: 8),
+            Text('Try adjusting your search terms.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontSize: 13)),
+          ],
+        ),
       ),
     );
   }
 }
-

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../inventory/presentation/pages/categories_list_view.dart';
 import '../../../customers/presentation/pages/customers_list_view.dart';
@@ -29,7 +30,7 @@ class Sidebar extends StatelessWidget {
                 const SizedBox(height: 8),
                 _DrawerItem(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Products',
+                  label: context.tr('inventory.products'),
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProductsListView()));
@@ -37,7 +38,7 @@ class Sidebar extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.category_outlined,
-                  label: 'Categories',
+                  label: context.tr('inventory.categories'),
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoriesListView()));
@@ -45,7 +46,7 @@ class Sidebar extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.people_alt_outlined,
-                  label: 'Customers',
+                  label: context.tr('customers.title'),
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomersListView()));
@@ -53,7 +54,7 @@ class Sidebar extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.badge_outlined,
-                  label: 'Employees',
+                  label: context.tr('staff.employees'),
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmployeesListView()));
@@ -61,7 +62,7 @@ class Sidebar extends StatelessWidget {
                 ),
                 _DrawerItem(
                   icon: Icons.local_shipping_outlined,
-                  label: 'Suppliers',
+                  label: context.tr('suppliers.title'),
                   onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SuppliersListView()));
@@ -70,8 +71,8 @@ class Sidebar extends StatelessWidget {
                 const Divider(color: AppColors.hairline, height: 24, indent: 24, endIndent: 24),
                 _DrawerItem(
                   icon: Icons.settings_outlined,
-                  label: 'Settings',
-                  onTap: () {},
+                  label: context.tr('settings.title'),
+                  onTap: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
@@ -120,7 +121,7 @@ class Sidebar extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),
-            ),
+          ),
           const SizedBox(height: 4),
           Text(
             'Store Admin · $businessName',
@@ -143,10 +144,12 @@ class Sidebar extends StatelessWidget {
       ),
       child: _DrawerItem(
         icon: Icons.logout,
-        label: 'Log Out',
+        label: context.tr('settings.logout'),
         textColor: AppColors.error,
         iconColor: AppColors.error,
-        onTap: () {},
+        onTap: () {
+          Navigator.of(context).pop();
+        },
       ),
     );
   }

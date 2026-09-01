@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import './add_product_view.dart';
 
@@ -31,7 +32,7 @@ class _ProductsListViewState extends State<ProductsListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Products', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17)),
+            Text(context.tr('inventory.products'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17)),
             Text('0 products', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12)),
           ],
         ),
@@ -49,7 +50,7 @@ class _ProductsListViewState extends State<ProductsListView> {
                     controller: _searchCtrl,
                     onChanged: (v) => setState(() => _search = v),
                     decoration: InputDecoration(
-                      hintText: 'Search products...',
+                      hintText: context.tr('common.search'),
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.slate, size: 20),
                       suffixIcon: _search.isNotEmpty
                           ? IconButton(
@@ -79,7 +80,7 @@ class _ProductsListViewState extends State<ProductsListView> {
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(context.tr('inventory.add_product'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -98,9 +99,9 @@ class _EmptyState extends StatelessWidget {
           children: [
             Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.slate.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
-            Text('No products yet', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
+            Text(context.tr('inventory.no_products'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
             const SizedBox(height: 8),
-            Text('Add your first product to start\nselling items.',
+            Text(context.tr('inventory.no_products_hint'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13)),
           ],
