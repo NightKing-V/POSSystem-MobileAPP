@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/supplier_mock_data.dart';
-import '../../domain/models/product.dart';
-import '../widgets/status_badge.dart';
-import 'add_edit_supplier_view.dart';
-import 'create_edit_purchase_order_view.dart';
-import 'receive_purchase_order_view.dart';
-import 'link_product_vendor_view.dart';
+import '../../../inventory/domain/models/product.dart';
+import '../../../dashboard/presentation/widgets/status_badge.dart';
+import './add_edit_supplier_view.dart';
+import './create_edit_purchase_order_view.dart';
+import './receive_purchase_order_view.dart';
+import './link_product_vendor_view.dart';
 
 class SupplierDetailView extends StatefulWidget {
   const SupplierDetailView({super.key, required this.vendor});
@@ -57,7 +57,7 @@ class _SupplierDetailViewState extends State<SupplierDetailView>
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: AppColors.inkTeal),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
                 builder: (_) =>
                     AddEditSupplierView(vendor: widget.vendor))),
           ),
@@ -368,7 +368,7 @@ class _PurchaseOrdersTab extends StatelessWidget {
         ElevatedButton.icon(
           icon: const Icon(Icons.add, size: 16),
           label: const Text('New Purchase Order'),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
             builder: (_) => CreateEditPurchaseOrderView(vendor: vendor),
           )),
           style: ElevatedButton.styleFrom(
@@ -395,7 +395,7 @@ class _PoHistoryTile extends StatelessWidget {
     return GestureDetector(
       onTap: po.status == PurchaseOrderStatus.sent ||
               po.status == PurchaseOrderStatus.partiallyReceived
-          ? () => Navigator.of(context).push(MaterialPageRoute(
+          ? () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
                 builder: (_) => ReceivePurchaseOrderView(order: po),
               ))
           : null,

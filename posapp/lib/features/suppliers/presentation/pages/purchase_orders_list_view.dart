@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/supplier_mock_data.dart';
-import '../widgets/status_badge.dart';
-import 'create_edit_purchase_order_view.dart';
-import 'receive_purchase_order_view.dart';
+import '../../../dashboard/presentation/widgets/status_badge.dart';
+import './create_edit_purchase_order_view.dart';
+import './receive_purchase_order_view.dart';
 
 class PurchaseOrdersListView extends StatefulWidget {
   const PurchaseOrdersListView({super.key});
@@ -88,7 +88,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                                       PurchaseOrderStatus.sent ||
                                   orders[i].status ==
                                       PurchaseOrderStatus.partiallyReceived) {
-                                Navigator.of(context).push(MaterialPageRoute(
+                                Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
                                   builder: (_) =>
                                       ReceivePurchaseOrderView(
                                           order: orders[i]),
@@ -104,7 +104,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
           builder: (_) => const CreateEditPurchaseOrderView(),
         )),
         backgroundColor: AppColors.inkTeal,

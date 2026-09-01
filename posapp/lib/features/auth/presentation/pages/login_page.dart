@@ -1,66 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:posapp/features/Organisations/presentation/pages/select_business.dart';
+import 'package:posapp/features/select_business/presentation/pages/select_business.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../data/auth_repository.dart';
 import '../widgets/auth_text_field.dart';
-import 'signup_page.dart';
-
-/// Login screen wired to AuthRepository.
-class LoginPage extends StatefulWidget {
+import './signup_page.dart';
+/// Login screen. UI only — no auth wiring yet.
+class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final AuthRepository _authRepository = AuthRepository();
-
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in both email and password.')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    final response = await _authRepository.login(
-      email: email,
-      password: password,
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (response.isSuccess) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.errorMessage ?? 'Sign in failed.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,10 +45,10 @@ class _LoginPageState extends State<LoginPage> {
                         Text(
                           'Sign in',
                           style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.ink,
-                              ),
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.ink,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -111,15 +56,13 @@ class _LoginPageState extends State<LoginPage> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 32),
-                        AuthTextField(
-                          controller: _emailController,
+                        const AuthTextField(
                           label: 'Email',
                           hintText: 'you@business.com',
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 20),
-                        AuthTextField(
-                          controller: _passwordController,
+                        const AuthTextField(
                           label: 'Password',
                           obscureText: true,
                         ),
@@ -145,7 +88,11 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleLogin,
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
+                              );
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.inkTeal,
                               foregroundColor: Colors.white,
@@ -154,26 +101,14 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : Text(
-                                    'Sign in',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
+                            child: Text(
+                              'Sign in',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -183,8 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account?",
-                          style: Theme.of(context).textTheme.bodyMedium),
+                      Text("Don't have an account?", style: Theme.of(context).textTheme.bodyMedium),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(

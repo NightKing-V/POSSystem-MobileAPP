@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/mock_data.dart';
-import 'add_edit_permission_set_view.dart';
+import '../../../dashboard/domain/mock_data.dart';
+import './add_edit_permission_set_view.dart';
 
 class PermissionSetsListView extends StatelessWidget {
   const PermissionSetsListView({super.key});
@@ -43,7 +43,7 @@ class PermissionSetsListView extends StatelessWidget {
               itemBuilder: (context, i) => _PermissionSetCard(
                 ps: mockPermissionSets[i],
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
+                  MaterialPageRoute(fullscreenDialog: true, 
                     builder: (_) => AddEditPermissionSetView(
                         permissionSet: mockPermissionSets[i]),
                   ),
@@ -55,7 +55,7 @@ class PermissionSetsListView extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(
+          MaterialPageRoute(fullscreenDialog: true, 
               builder: (_) => const AddEditPermissionSetView()),
         ),
         backgroundColor: AppColors.inkTeal,

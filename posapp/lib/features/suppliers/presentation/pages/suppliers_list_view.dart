@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/supplier_mock_data.dart';
 import '../widgets/supplier_card.dart';
-import 'add_edit_supplier_view.dart';
-import 'supplier_detail_view.dart';
+import './add_edit_supplier_view.dart';
+import './supplier_detail_view.dart';
 
 class SuppliersListView extends StatefulWidget {
   const SuppliersListView({super.key});
@@ -105,7 +105,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                             linkedProductCount:
                                 vendorLinkedProductCount(vendors[i].id),
                             onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
+                              MaterialPageRoute(fullscreenDialog: true, 
                                 builder: (_) =>
                                     SupplierDetailView(vendor: vendors[i]),
                               ),
@@ -120,7 +120,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddEditSupplierView()),
+          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditSupplierView()),
         ),
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,

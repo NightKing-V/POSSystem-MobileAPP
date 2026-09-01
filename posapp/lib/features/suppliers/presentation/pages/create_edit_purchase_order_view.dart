@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/supplier_mock_data.dart';
-import '../../domain/models/product.dart';
-import '../../domain/mock_data.dart';
+import '../../../inventory/domain/models/product.dart';
+import '../../../dashboard/domain/mock_data.dart';
 
 class CreateEditPurchaseOrderView extends StatefulWidget {
   const CreateEditPurchaseOrderView({super.key, this.vendor, this.order});

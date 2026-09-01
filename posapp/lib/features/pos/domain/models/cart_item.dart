@@ -1,4 +1,4 @@
-import 'product.dart';
+import '../../../inventory/domain/models/product.dart';
 
 /// Mutable cart line-item.
 ///

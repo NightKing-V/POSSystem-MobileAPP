@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/models/product.dart';
+import '../../../inventory/domain/models/product.dart';
 
 /// Bottom sheet: search & select a product, enter vendor cost + vendor code.
 class LinkProductVendorView extends StatefulWidget {

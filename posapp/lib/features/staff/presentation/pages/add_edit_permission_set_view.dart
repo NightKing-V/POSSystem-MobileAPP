@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/mock_data.dart';
+import '../../../dashboard/domain/mock_data.dart';
 
 class AddEditPermissionSetView extends StatefulWidget {
   const AddEditPermissionSetView({super.key, this.permissionSet});

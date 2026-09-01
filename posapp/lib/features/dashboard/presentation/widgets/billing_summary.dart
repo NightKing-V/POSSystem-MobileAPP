@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../billing/bill_calculator.dart';
-import '../../domain/models/cart_item.dart';
+import '../../../pos/billing/bill_calculator.dart';
+import '../../../pos/domain/models/cart_item.dart';
 
 /// Billing summary panel: item count, subtotal, editable bill-level
 /// discount, editable tax %, and the prominent grand total.

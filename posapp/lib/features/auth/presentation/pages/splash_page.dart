@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import './login_page.dart';
 
 /// A custom animated splash page for a professional app-launch feel.
 class SplashPage extends StatefulWidget {

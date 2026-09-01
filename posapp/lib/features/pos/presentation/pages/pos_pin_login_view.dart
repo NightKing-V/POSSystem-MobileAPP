@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/mock_data.dart';
+import '../../../dashboard/domain/mock_data.dart';
 
 /// Standalone POS PIN login screen.
 /// Not part of the bottom-nav; pushed as a full-screen route.
@@ -54,6 +54,8 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
       });
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -318,4 +320,3 @@ class _NumKey extends StatelessWidget {
     );
   }
 }
-
