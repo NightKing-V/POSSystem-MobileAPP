@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../data/auth_repository.dart';
-import 'package:posapp/features/Organisations/data/orgs_repository.dart';
-import 'package:posapp/features/Organisations/presentation/pages/select_business.dart';
 import '../widgets/auth_text_field.dart';
+import './login_page.dart';
 
+/// Multi-step sign up flow. UI only — no auth wiring yet.
+///
+/// Deliberately a single route: each step swaps the *content* of one
+/// card via [AnimatedSwitcher] instead of pushing a new page. This is
+/// the same pattern Google/YouTube onboarding uses — it keeps state
+/// (typed values, scroll position, card chrome) alive across steps and
+/// avoids a navigation stack the user has to fight to back out of.
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -12,15 +17,7 @@ class SignupPage extends StatefulWidget {
   State<SignupPage> createState() => _SignupPageState();
 }
 
-enum _Step {
-  credentials,
-  phone,
-  creatingAccount,
-  verify,
-  businessType,
-  businessName,
-  creatingBusiness,
-}
+enum _Step { credentials, phone, businessType, businessName, creating, verify }
 
 class _SignupData {
   String email = '';
@@ -36,9 +33,6 @@ class _SignupPageState extends State<SignupPage> {
   String? _errorText;
 
   final _data = _SignupData();
-  final AuthRepository _authRepository = AuthRepository();
-  final OrgsRepository _orgsRepository = OrgsRepository();
-
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
@@ -48,36 +42,17 @@ class _SignupPageState extends State<SignupPage> {
   static const _stepOrder = [
     _Step.credentials,
     _Step.phone,
-    _Step.creatingAccount,
-    _Step.verify,
     _Step.businessType,
     _Step.businessName,
-    _Step.creatingBusiness,
+    _Step.creating,
+    _Step.verify,
   ];
 
-  static const _stepLabels = [
-    'Account',
-    'Phone',
-    'Verify',
-    'Business',
-    'Details',
-  ];
+  static const _stepLabels = ['Account', 'Phone', 'Business', 'Details', 'Verify'];
 
   int get _indicatorIndex {
-    switch (_step) {
-      case _Step.credentials:
-        return 0;
-      case _Step.phone:
-      case _Step.creatingAccount:
-        return 1;
-      case _Step.verify:
-        return 2;
-      case _Step.businessType:
-        return 3;
-      case _Step.businessName:
-      case _Step.creatingBusiness:
-        return 4;
-    }
+    final i = _stepOrder.indexOf(_step);
+    return i >= 4 ? 4 : i; // creating + verify both light up the last dot
   }
 
   @override
@@ -133,14 +108,6 @@ class _SignupPageState extends State<SignupPage> {
           return;
         }
         _data.phone = _phoneCtrl.text.trim();
-        _goTo(_Step.creatingAccount);
-        _registerUser();
-        break;
-
-      case _Step.creatingAccount:
-        break;
-
-      case _Step.verify:
         _goTo(_Step.businessType);
         break;
 
@@ -158,53 +125,26 @@ class _SignupPageState extends State<SignupPage> {
           return;
         }
         _data.businessName = _businessNameCtrl.text.trim();
-        _goTo(_Step.creatingBusiness);
+        _goTo(_Step.creating);
         _createBusiness();
         break;
 
-      case _Step.creatingBusiness:
+      case _Step.creating:
+        break; // no-op, waiting on _createBusiness()
+
+      case _Step.verify:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
         break;
-    }
-  }
-
-  Future<void> _registerUser() async {
-    final response = await _authRepository.register(
-      email: _data.email,
-      password: _data.password,
-      phone: _data.phone,
-    );
-
-    if (!mounted || _step != _Step.creatingAccount) return;
-
-    if (response.isSuccess) {
-      _goTo(_Step.verify);
-    } else {
-      setState(() {
-        _errorText = response.errorMessage ?? 'Failed to register account';
-      });
-      _goTo(_Step.phone, direction: -1);
     }
   }
 
   Future<void> _createBusiness() async {
-    final response = await _orgsRepository.createOrganization(
-      businessName: _data.businessName,
-      businessType: _data.businessType!,
-      phone: _data.phone,
-    );
-
-    if (!mounted || _step != _Step.creatingBusiness) return;
-
-    if (response.isSuccess) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
-      );
-    } else {
-      setState(() {
-        _errorText = response.errorMessage ?? 'Failed to create business';
-      });
-      _goTo(_Step.businessName, direction: -1);
-    }
+    // Placeholder for the real account/business creation call.
+    await Future.delayed(const Duration(milliseconds: 1400));
+    if (!mounted || _step != _Step.creating) return;
+    _goTo(_Step.verify);
   }
 
   @override
@@ -243,13 +183,8 @@ class _SignupPageState extends State<SignupPage> {
                       children: [
                         const _Wordmark(),
                         const SizedBox(height: 24),
-                        if (_step != _Step.creatingAccount &&
-                            _step != _Step.creatingBusiness &&
-                            _step != _Step.verify) ...[
-                          _StepProgress(
-                            current: _indicatorIndex,
-                            labels: _stepLabels,
-                          ),
+                        if (_step != _Step.creating && _step != _Step.verify) ...[
+                          _StepProgress(current: _indicatorIndex, labels: _stepLabels),
                           const SizedBox(height: 24),
                         ],
                         ClipRect(
@@ -260,32 +195,20 @@ class _SignupPageState extends State<SignupPage> {
                             transitionBuilder: (child, animation) {
                               final isIncoming = child.key == ValueKey(_step);
                               final offsetAnim = Tween<Offset>(
-                                begin: Offset(
-                                  isIncoming
-                                      ? _direction * 0.15
-                                      : -_direction * 0.15,
-                                  0,
-                                ),
+                                begin: Offset(isIncoming ? _direction * 0.15 : -_direction * 0.15, 0),
                                 end: Offset.zero,
                               ).animate(animation);
                               return ClipRect(
                                 child: SlideTransition(
                                   position: offsetAnim,
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  ),
+                                  child: FadeTransition(opacity: animation, child: child),
                                 ),
                               );
                             },
-                            layoutBuilder: (currentChild, previousChildren) =>
-                                Stack(
-                                  alignment: Alignment.topCenter,
-                                  children: [
-                                    ...previousChildren,
-                                    ?currentChild,
-                                  ],
-                                ),
+                            layoutBuilder: (currentChild, previousChildren) => Stack(
+                              alignment: Alignment.topCenter,
+                              children: [...previousChildren, if (currentChild != null) currentChild],
+                            ),
                             child: KeyedSubtree(
                               key: ValueKey(_step),
                               child: _buildStepContent(),
@@ -300,17 +223,12 @@ class _SignupPageState extends State<SignupPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'Already have an account?',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                        Text('Already have an account?', style: Theme.of(context).textTheme.bodyMedium),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.inkTeal,
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            textStyle: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           child: const Text('Sign in'),
                         ),
@@ -336,24 +254,11 @@ class _SignupPageState extends State<SignupPage> {
           onContinue: _next,
           showBack: true,
           fields: [
-            AuthTextField(
-              label: 'Email',
-              hintText: 'you@business.com',
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-            ),
+            AuthTextField(label: 'Email', hintText: 'you@business.com', controller: _emailCtrl, keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 20),
-            AuthTextField(
-              label: 'Password',
-              obscureText: true,
-              controller: _passwordCtrl,
-            ),
+            AuthTextField(label: 'Password', obscureText: true, controller: _passwordCtrl),
             const SizedBox(height: 20),
-            AuthTextField(
-              label: 'Confirm password',
-              obscureText: true,
-              controller: _confirmCtrl,
-            ),
+            AuthTextField(label: 'Confirm password', obscureText: true, controller: _confirmCtrl),
           ],
         );
 
@@ -365,12 +270,7 @@ class _SignupPageState extends State<SignupPage> {
           onBack: _back,
           onContinue: _next,
           fields: [
-            AuthTextField(
-              label: 'Phone',
-              hintText: '07X XXX XXXX',
-              controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-            ),
+            AuthTextField(label: 'Phone', hintText: '07X XXX XXXX', controller: _phoneCtrl, keyboardType: TextInputType.phone),
           ],
         );
 
@@ -401,18 +301,11 @@ class _SignupPageState extends State<SignupPage> {
           onContinue: _next,
           continueLabel: 'Create account',
           fields: [
-            AuthTextField(
-              label: 'Business name',
-              hintText: 'e.g. Maya Boutique',
-              controller: _businessNameCtrl,
-            ),
+            AuthTextField(label: 'Business name', hintText: 'e.g. Maya Boutique', controller: _businessNameCtrl),
           ],
         );
 
-      case _Step.creatingAccount:
-        return const _CreatingAccountView();
-
-      case _Step.creatingBusiness:
+      case _Step.creating:
         return const _CreatingBusinessView();
 
       case _Step.verify:
@@ -458,15 +351,8 @@ class _StepShell extends StatelessWidget {
                 child: IconButton(
                   onPressed: onBack,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  icon: const Icon(
-                    Icons.arrow_back_rounded,
-                    size: 20,
-                    color: AppColors.slate,
-                  ),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20, color: AppColors.slate),
                 ),
               ),
             Expanded(
@@ -487,10 +373,7 @@ class _StepShell extends StatelessWidget {
         ...fields,
         if (errorText != null) ...[
           const SizedBox(height: 12),
-          Text(
-            errorText!,
-            style: const TextStyle(color: AppColors.error, fontSize: 13),
-          ),
+          Text(errorText!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
         ],
         const SizedBox(height: 28),
         SizedBox(
@@ -502,9 +385,7 @@ class _StepShell extends StatelessWidget {
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
               continueLabel,
@@ -530,20 +411,13 @@ class _BusinessTypeOption {
 
 const _businessTypeOptions = [
   _BusinessTypeOption('retail', 'Retail store', Icons.storefront_outlined),
-  _BusinessTypeOption(
-    'restaurant',
-    'Restaurant / cafe',
-    Icons.restaurant_outlined,
-  ),
+  _BusinessTypeOption('restaurant', 'Restaurant / cafe', Icons.restaurant_outlined),
   _BusinessTypeOption('service', 'Service business', Icons.handyman_outlined),
   _BusinessTypeOption('other', 'Other', Icons.apps_outlined),
 ];
 
 class _BusinessTypeSelector extends StatelessWidget {
-  const _BusinessTypeSelector({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _BusinessTypeSelector({required this.selected, required this.onSelected});
 
   final String? selected;
   final ValueChanged<String> onSelected;
@@ -566,11 +440,7 @@ class _BusinessTypeSelector extends StatelessWidget {
 }
 
 class _BusinessTypeCard extends StatelessWidget {
-  const _BusinessTypeCard({
-    required this.option,
-    required this.selected,
-    required this.onTap,
-  });
+  const _BusinessTypeCard({required this.option, required this.selected, required this.onTap});
 
   final _BusinessTypeOption option;
   final bool selected;
@@ -585,9 +455,7 @@ class _BusinessTypeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected
-              ? AppColors.inkTeal.withValues(alpha: 0.06)
-              : Colors.white,
+          color: selected ? AppColors.inkTeal.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.inkTeal : AppColors.hairline,
@@ -596,11 +464,7 @@ class _BusinessTypeCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              option.icon,
-              size: 20,
-              color: selected ? AppColors.inkTeal : AppColors.slate,
-            ),
+            Icon(option.icon, size: 20, color: selected ? AppColors.inkTeal : AppColors.slate),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -615,49 +479,10 @@ class _BusinessTypeCard extends StatelessWidget {
             AnimatedOpacity(
               duration: const Duration(milliseconds: 180),
               opacity: selected ? 1 : 0,
-              child: const Icon(
-                Icons.check_circle,
-                size: 20,
-                color: AppColors.inkTeal,
-              ),
+              child: const Icon(Icons.check_circle, size: 20, color: AppColors.inkTeal),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _CreatingAccountView extends StatelessWidget {
-  const _CreatingAccountView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: AppColors.inkTeal,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Setting up your account…',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'This only takes a moment',
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-        ],
       ),
     );
   }
@@ -676,16 +501,10 @@ class _CreatingBusinessView extends StatelessWidget {
           const SizedBox(
             width: 32,
             height: 32,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: AppColors.inkTeal,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.inkTeal),
           ),
           const SizedBox(height: 20),
-          Text(
-            'Setting up your business…',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Setting up your business…', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
           Text(
             'This only takes a moment',
@@ -698,11 +517,24 @@ class _CreatingBusinessView extends StatelessWidget {
   }
 }
 
-class _VerifyEmailView extends StatelessWidget {
+class _VerifyEmailView extends StatefulWidget {
   const _VerifyEmailView({required this.email, required this.onContinue});
 
   final String email;
   final VoidCallback onContinue;
+
+  @override
+  State<_VerifyEmailView> createState() => _VerifyEmailViewState();
+}
+
+class _VerifyEmailViewState extends State<_VerifyEmailView> {
+  final _otpCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _otpCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -718,11 +550,7 @@ class _VerifyEmailView extends StatelessWidget {
               color: AppColors.marigold.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.mark_email_read_outlined,
-              color: AppColors.inkTeal,
-              size: 26,
-            ),
+            child: const Icon(Icons.mark_email_read_outlined, color: AppColors.inkTeal, size: 26),
           ),
         ),
         const SizedBox(height: 20),
@@ -737,26 +565,31 @@ class _VerifyEmailView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'We sent a verification link to\n$email',
+          'We sent a 6-digit code to\n${widget.email}',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 24),
+        AuthTextField(
+          label: 'Verification Code',
+          hintText: 'Enter 6-digit OTP',
+          controller: _otpCtrl,
+          keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: onContinue,
+            onPressed: widget.onContinue,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
-              "I've verified — continue",
+              "Verify and Continue",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontSize: 16,
@@ -770,14 +603,11 @@ class _VerifyEmailView extends StatelessWidget {
           child: TextButton(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Verification email resent')),
+                const SnackBar(content: Text('OTP resent to your email')),
               );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.inkTeal),
-            child: const Text(
-              'Resend email',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: const Text('Resend code', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ),
       ],

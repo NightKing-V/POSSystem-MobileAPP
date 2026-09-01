@@ -54,7 +54,7 @@ class DashboardHomeView extends StatelessWidget {
               // Stat cards
               isWide
                   ? SizedBox(
-                      height: 108,
+                      height: 124,
                       child: Row(
                         children: [
                           for (int i = 0; i < _stats.length; i++) ...[
@@ -72,7 +72,7 @@ class DashboardHomeView extends StatelessWidget {
                       ),
                     )
                   : SizedBox(
-                      height: 108,
+                      height: 124,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _stats.length,

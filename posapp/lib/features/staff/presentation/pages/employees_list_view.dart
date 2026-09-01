@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/mock_data.dart';
-import 'add_edit_employee_view.dart';
+import '../../../dashboard/domain/mock_data.dart';
+import './add_edit_employee_view.dart';
 
 class EmployeesListView extends StatefulWidget {
   const EmployeesListView({super.key});
@@ -104,7 +104,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
                           itemBuilder: (context, i) => _EmployeeTile(
                             employee: employees[i],
                             onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
+                              MaterialPageRoute(fullscreenDialog: true, 
                                 builder: (_) => AddEditEmployeeView(
                                     employee: employees[i]),
                               ),
@@ -119,7 +119,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddEditEmployeeView()),
+          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditEmployeeView()),
         ),
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,

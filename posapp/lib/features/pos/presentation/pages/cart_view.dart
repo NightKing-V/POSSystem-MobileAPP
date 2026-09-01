@@ -2,12 +2,12 @@
 import '../../../../core/theme/app_theme.dart';
 import '../../billing/bill_calculator.dart';
 import '../../domain/models/cart_item.dart';
-import '../../domain/models/product.dart';
-import '../widgets/billing_summary.dart';
+import '../../../inventory/domain/models/product.dart';
+import '../../../dashboard/presentation/widgets/billing_summary.dart';
 import '../widgets/cart_item_tile.dart';
 import '../widgets/payment_bar.dart';
-import '../widgets/product_grid.dart';
-import '../widgets/product_search_bar.dart';
+import '../../../inventory/presentation/widgets/product_grid.dart';
+import '../../../inventory/presentation/widgets/product_search_bar.dart';
 
 /// Breakpoint in logical pixels separating phone (narrow) from tablet/desktop.
 const double _kWideBreakpoint = 600.0;

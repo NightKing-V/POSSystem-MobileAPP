@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/mock_data.dart';
+import '../../../dashboard/domain/mock_data.dart';
 
 class AddEditEmployeeView extends StatefulWidget {
   const AddEditEmployeeView({super.key, this.employee});

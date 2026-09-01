@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/mock_data.dart';
-import 'add_edit_location_view.dart';
+import '../../../dashboard/domain/mock_data.dart';
+import './add_edit_location_view.dart';
 
 class LocationsListView extends StatefulWidget {
   const LocationsListView({super.key});
@@ -56,7 +56,7 @@ class _LocationsListViewState extends State<LocationsListView> {
                 isActive: _activeStates[i],
                 onToggle: (val) => setState(() => _activeStates[i] = val),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
+                  MaterialPageRoute(fullscreenDialog: true, 
                     builder: (_) => AddEditLocationView(location: _locations[i]),
                   ),
                 ),
@@ -67,7 +67,7 @@ class _LocationsListViewState extends State<LocationsListView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddEditLocationView()),
+          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditLocationView()),
         ),
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,
