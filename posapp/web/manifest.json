@@ -1,11 +1,11 @@
 {
-    "name": "posapp",
-    "short_name": "posapp",
+    "name": "KIVI POS",
+    "short_name": "KIVI",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#153E8A",
+    "description": "Streamlined Point of Sale and Inventory Management system for modern retail and businesses.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
