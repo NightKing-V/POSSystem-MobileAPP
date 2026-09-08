@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../dashboard/domain/mock_data.dart';
+import '../widgets/location_card.dart';
 import './add_edit_location_view.dart';
 
 class LocationsListView extends StatefulWidget {
@@ -33,12 +34,14 @@ class _LocationsListViewState extends State<LocationsListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Locations',
-                style:
-                    Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17)),
-            Text('Manage store branches',
-                style:
-                    Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12)),
+            Text(
+              'Locations',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+            ),
+            Text(
+              'Manage store branches',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -51,12 +54,13 @@ class _LocationsListViewState extends State<LocationsListView> {
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
               itemCount: _locations.length,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _LocationCard(
+              itemBuilder: (context, i) => LocationCard(
                 location: _locations[i],
                 isActive: _activeStates[i],
                 onToggle: (val) => setState(() => _activeStates[i] = val),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(fullscreenDialog: true, 
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
                     builder: (_) => AddEditLocationView(location: _locations[i]),
                   ),
                 ),
@@ -67,156 +71,19 @@ class _LocationsListViewState extends State<LocationsListView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditLocationView()),
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (_) => const AddEditLocationView(),
+          ),
         ),
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Add Location',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-}
-
-class _LocationCard extends StatelessWidget {
-  const _LocationCard({
-    required this.location,
-    required this.isActive,
-    required this.onToggle,
-    required this.onTap,
-  });
-
-  final MockLocation location;
-  final bool isActive;
-  final ValueChanged<bool> onToggle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border:
-              Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.inkTeal.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.storefront_outlined,
-                      color: AppColors.inkTeal, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(location.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15)),
-                      Text(location.address,
-                          style: const TextStyle(
-                              fontSize: 12, color: AppColors.slate)),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: isActive,
-                  onChanged: onToggle,
-                  activeThumbColor: AppColors.inkTeal,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _InfoChip(
-                  icon: Icons.people_outline,
-                  label: '${location.employeeCount} employees',
-                ),
-                const SizedBox(width: 8),
-                _InfoChip(
-                  icon: Icons.percent_outlined,
-                  label: '${location.taxRate.toStringAsFixed(0)}% tax',
-                ),
-                const SizedBox(width: 8),
-                _StatusChip(isActive: isActive),
-              ],
-            ),
-          ],
+        label: const Text(
+          'Add Location',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 }
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.inkTeal.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: AppColors.inkTeal),
-          const SizedBox(width: 4),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.inkTeal)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isActive
-            ? const Color(0xFF16A34A).withValues(alpha: 0.08)
-            : AppColors.slate.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        isActive ? 'Active' : 'Inactive',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: isActive ? const Color(0xFF16A34A) : AppColors.slate,
-        ),
-      ),
-    );
-  }
-}
-

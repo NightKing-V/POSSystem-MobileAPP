@@ -28,8 +28,8 @@ class ApiClient {
     String? baseUrl,
     String? Function()? getToken,
     this.onUnauthorized,
-  })  : baseUrl = baseUrl ?? ApiConstants.baseUrl,
-        getToken = getToken ?? TokenStorage.getToken;
+  }) : baseUrl = baseUrl ?? ApiConstants.baseUrl,
+       getToken = getToken ?? TokenStorage.getToken;
 
   /// Centralized HTTP Status Code Handling
   ApiResponse<T> _handleStatusCode<T>(
@@ -49,8 +49,8 @@ class ApiClient {
 
     final serverMessage = (bodyData is Map && bodyData.containsKey('message'))
         ? (bodyData['message'] is List
-            ? (bodyData['message'] as List).join(', ')
-            : bodyData['message'].toString())
+              ? (bodyData['message'] as List).join(', ')
+              : bodyData['message'].toString())
         : response.reasonPhrase;
 
     switch (statusCode) {
@@ -82,7 +82,8 @@ class ApiClient {
         onUnauthorized?.call();
         return ApiResponse<T>(
           statusCode: statusCode,
-          errorMessage: 'Session expired. Please log in again.',
+          errorMessage:
+              serverMessage ?? 'Session expired. Please log in again.',
           isSuccess: false,
         );
 
@@ -162,7 +163,8 @@ class ApiClient {
     } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error: ${e.message}. Please check your connection.',
+        errorMessage:
+            'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -192,7 +194,8 @@ class ApiClient {
     } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error: ${e.message}. Please check your connection.',
+        errorMessage:
+            'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -222,7 +225,8 @@ class ApiClient {
     } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error: ${e.message}. Please check your connection.',
+        errorMessage:
+            'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -252,7 +256,8 @@ class ApiClient {
     } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error: ${e.message}. Please check your connection.',
+        errorMessage:
+            'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {
@@ -277,7 +282,8 @@ class ApiClient {
     } on http.ClientException catch (e) {
       return ApiResponse<T>(
         statusCode: 0,
-        errorMessage: 'Network error: ${e.message}. Please check your connection.',
+        errorMessage:
+            'Network error: ${e.message}. Please check your connection.',
         isSuccess: false,
       );
     } catch (e) {

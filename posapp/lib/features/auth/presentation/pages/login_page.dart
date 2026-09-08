@@ -3,9 +3,12 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../Organisations/presentation/pages/select_business.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/auth_text_field.dart';
+import './forgot_password_page.dart';
 import './signup_page.dart';
 import '../../data/auth_repository.dart';
 import '../../../../core/api/api_helper.dart';
+
+import '../widgets/auth_wordmark.dart';
 
 /// Login screen connected to Auth API.
 class LoginPage extends StatefulWidget {
@@ -101,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const _Wordmark(),
+                        const AuthWordmark(),
                         const SizedBox(height: 20),
                         Text(
                           context.tr('auth.login'),
@@ -147,7 +150,15 @@ class _LoginPageState extends State<LoginPage> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ForgotPasswordPage(
+                                    initialEmail: _emailCtrl.text.trim(),
+                                  ),
+                                ),
+                              );
+                            },
                             style: TextButton.styleFrom(
                               foregroundColor: AppColors.inkTeal,
                               padding: EdgeInsets.zero,
@@ -222,14 +233,5 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
-  }
-}
-
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset('assets/logo.png', height: 72);
   }
 }

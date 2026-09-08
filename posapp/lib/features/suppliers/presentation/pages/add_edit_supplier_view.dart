@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:posapp/features/suppliers/domain/models/supplier_mock_data.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/suppliers_repository.dart';
 
 class AddEditSupplierView extends StatefulWidget {
-  const AddEditSupplierView({super.key, this.supplier, this.orgId});
+  const AddEditSupplierView({
+    super.key,
+    this.supplier,
+    this.vendor,
+    this.orgId,
+  });
 
   final SupplierProps? supplier;
+  final Vendor? vendor;
   final String? orgId;
 
   @override
@@ -25,18 +32,24 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
   late final TextEditingController _notesCtrl;
   bool _isLoading = false;
 
-  bool get _isEditing => widget.supplier != null;
+  bool get _isEditing => widget.supplier != null || widget.vendor != null;
 
   @override
   void initState() {
     super.initState();
-    final v = widget.supplier;
-    _nameCtrl = TextEditingController(text: v?.name ?? '');
-    _contactCtrl = TextEditingController(text: v?.contactPerson ?? '');
-    _phoneCtrl = TextEditingController(text: v?.phone ?? '');
-    _emailCtrl = TextEditingController(text: v?.email ?? '');
-    _addressCtrl = TextEditingController(text: v?.address ?? '');
-    _notesCtrl = TextEditingController(text: v?.description ?? '');
+    final name = widget.supplier?.name ?? widget.vendor?.name ?? '';
+    final contact = widget.supplier?.contactPerson ?? widget.vendor?.contactPerson ?? '';
+    final phone = widget.supplier?.phone ?? widget.vendor?.phone ?? '';
+    final email = widget.supplier?.email ?? widget.vendor?.email ?? '';
+    final address = widget.supplier?.address ?? widget.vendor?.address ?? '';
+    final notes = widget.supplier?.description ?? widget.vendor?.notes ?? '';
+
+    _nameCtrl = TextEditingController(text: name);
+    _contactCtrl = TextEditingController(text: contact);
+    _phoneCtrl = TextEditingController(text: phone);
+    _emailCtrl = TextEditingController(text: email);
+    _addressCtrl = TextEditingController(text: address);
+    _notesCtrl = TextEditingController(text: notes);
   }
 
   @override
@@ -47,7 +60,7 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
       _phoneCtrl,
       _emailCtrl,
       _addressCtrl,
-      _notesCtrl
+      _notesCtrl,
     ]) {
       c.dispose();
     }
@@ -62,11 +75,17 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
     final dto = CreateSupplierDto(
       orgId: widget.orgId ?? '00000000-0000-0000-0000-000000000000',
       name: _nameCtrl.text.trim(),
-      contactPerson: _contactCtrl.text.trim().isNotEmpty ? _contactCtrl.text.trim() : null,
+      contactPerson: _contactCtrl.text.trim().isNotEmpty
+          ? _contactCtrl.text.trim()
+          : null,
       phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
       email: _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : null,
-      address: _addressCtrl.text.trim().isNotEmpty ? _addressCtrl.text.trim() : null,
-      description: _notesCtrl.text.trim().isNotEmpty ? _notesCtrl.text.trim() : null,
+      address: _addressCtrl.text.trim().isNotEmpty
+          ? _addressCtrl.text.trim()
+          : null,
+      description: _notesCtrl.text.trim().isNotEmpty
+          ? _notesCtrl.text.trim()
+          : null,
     );
 
     final res = await _suppliersRepo.createSupplier(dto);
@@ -98,10 +117,9 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
         titleSpacing: 16,
         title: Text(
           _isEditing ? 'Edit Supplier' : context.tr('suppliers.add_supplier'),
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontSize: 17),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(
@@ -119,14 +137,18 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                     _FormCard(
                       title: 'Supplier Details',
                       children: [
-                        _FieldLabel('${context.tr('suppliers.supplier_name')} *'),
+                        _FieldLabel(
+                          '${context.tr('suppliers.supplier_name')} *',
+                        ),
                         TextFormField(
                           controller: _nameCtrl,
                           textCapitalization: TextCapitalization.words,
                           decoration: const InputDecoration(
-                              hintText: 'e.g. Lanka Fresh Distributors'),
-                          validator: (v) =>
-                              (v == null || v.trim().isEmpty) ? 'Supplier name is required' : null,
+                            hintText: 'e.g. Lanka Fresh Distributors',
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Supplier name is required'
+                              : null,
                         ),
                         const SizedBox(height: 16),
                         _FieldLabel(context.tr('suppliers.contact_person')),
@@ -134,15 +156,17 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                           controller: _contactCtrl,
                           textCapitalization: TextCapitalization.words,
                           decoration: const InputDecoration(
-                              hintText: 'e.g. Bandara Silva'),
+                            hintText: 'e.g. Bandara Silva',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _FieldLabel('Phone Number'),
                         TextFormField(
                           controller: _phoneCtrl,
                           keyboardType: TextInputType.phone,
-                          decoration:
-                              const InputDecoration(hintText: '+94 11 234 5678'),
+                          decoration: const InputDecoration(
+                            hintText: '+94 11 234 5678',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _FieldLabel('Email Address'),
@@ -150,7 +174,8 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
                           decoration: const InputDecoration(
-                              hintText: 'orders@supplier.lk'),
+                            hintText: 'orders@supplier.lk',
+                          ),
                         ),
                       ],
                     ),
@@ -162,7 +187,8 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                         TextFormField(
                           controller: _addressCtrl,
                           decoration: const InputDecoration(
-                              hintText: 'e.g. 100 Main Street, Pettah'),
+                            hintText: 'e.g. 100 Main Street, Pettah',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         _FieldLabel('Notes'),
@@ -170,7 +196,8 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                           controller: _notesCtrl,
                           maxLines: 3,
                           decoration: const InputDecoration(
-                              hintText: 'Payment terms, delivery schedules…'),
+                            hintText: 'Payment terms, delivery schedules…',
+                          ),
                         ),
                       ],
                     ),
@@ -183,9 +210,12 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.slate,
                               side: const BorderSide(
-                                  color: AppColors.hairline, width: 1.5),
+                                color: AppColors.hairline,
+                                width: 1.5,
+                              ),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                               minimumSize: const Size(0, 52),
                             ),
                             child: Text(context.tr('common.cancel')),
@@ -201,7 +231,8 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                               minimumSize: const Size(0, 52),
                             ),
                             child: _isLoading
@@ -214,7 +245,9 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                                     ),
                                   )
                                 : Text(
-                                    _isEditing ? 'Update Supplier' : context.tr('common.save'),
+                                    _isEditing
+                                        ? 'Update Supplier'
+                                        : context.tr('common.save'),
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -252,16 +285,19 @@ class _FormCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
+          color: AppColors.hairline.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontSize: 15)),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontSize: 15),
+          ),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -282,10 +318,10 @@ class _FieldLabel extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+          color: AppColors.ink,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
       ),
     );
   }

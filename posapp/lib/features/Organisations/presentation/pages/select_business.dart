@@ -134,15 +134,19 @@ class _SelectBusinessPageState extends State<SelectBusinessPage> {
                         category: org.category ?? 'Branch',
                         icon: Icons.storefront_outlined,
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DashboardPage(
-                                businessName: org.name,
-                                orgId: org.id,
-                                locationId: org.primaryLocation?.id,
-                              ),
-                            ),
-                          );
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (_) => DashboardPage(
+                                    businessName: org.name,
+                                    orgId: org.id,
+                                    locationId: org.primaryLocation?.id,
+                                  ),
+                                ),
+                              )
+                              .then((_) {
+                                if (mounted) _loadOrganizations();
+                              });
                         },
                       ),
                       const SizedBox(height: 14),

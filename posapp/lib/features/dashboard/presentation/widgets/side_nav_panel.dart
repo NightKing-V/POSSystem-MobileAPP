@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/data/auth_repository.dart';
+import '../../../auth/presentation/pages/login_page.dart';
+import '../../../settings/presentation/widgets/settings_dialogs.dart';
 
+/// Navigation Rail / Side Panel for Tablet and Desktop viewports.
 class SideNavPanel extends StatelessWidget {
   const SideNavPanel({
     super.key,
@@ -17,8 +21,26 @@ class SideNavPanel extends StatelessWidget {
   final VoidCallback onSwitchBusiness;
   final bool isExpanded;
 
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirmed = await SettingsDialogs.confirmLogout(context);
+    if (!confirmed || !context.mounted) return;
+
+    final authRepo = AuthRepository();
+    await authRepo.logout();
+
+    if (!context.mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final initial = businessName.isNotEmpty
+        ? businessName.substring(0, 1).toUpperCase()
+        : 'B';
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: isExpanded ? 240 : 72,
@@ -27,7 +49,7 @@ class SideNavPanel extends StatelessWidget {
         elevation: 4,
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(initial),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -74,14 +96,14 @@ class SideNavPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(String initial) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isExpanded ? 16 : 8,
         vertical: 16,
       ),
-      decoration: BoxDecoration(
-        border: const Border(
+      decoration: const BoxDecoration(
+        border: Border(
           bottom: BorderSide(color: AppColors.hairline, width: 1),
         ),
       ),
@@ -91,15 +113,29 @@ class SideNavPanel extends StatelessWidget {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: AppColors.inkTeal.withValues(alpha: 0.12),
-                  child: const Text('JD', style: TextStyle(color: AppColors.inkTeal, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      color: AppColors.inkTeal,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('John Doe', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text(businessName, style: const TextStyle(fontSize: 12, color: AppColors.slate), overflow: TextOverflow.ellipsis),
+                      Text(
+                        businessName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Text(
+                        'Store Admin',
+                        style: TextStyle(fontSize: 12, color: AppColors.slate),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -108,7 +144,10 @@ class SideNavPanel extends StatelessWidget {
           : CircleAvatar(
               radius: 16,
               backgroundColor: AppColors.inkTeal.withValues(alpha: 0.12),
-              child: const Text('JD', style: TextStyle(color: AppColors.inkTeal, fontSize: 12)),
+              child: Text(
+                initial,
+                style: const TextStyle(color: AppColors.inkTeal, fontSize: 12),
+              ),
             ),
     );
   }
@@ -135,7 +174,7 @@ class SideNavPanel extends StatelessWidget {
             activeIcon: Icons.logout,
             label: 'Logout',
             isSelected: false,
-            onTap: () {},
+            onTap: () => _handleLogout(context),
             isExpanded: isExpanded,
             iconColor: AppColors.error,
             textColor: AppColors.error,
@@ -169,8 +208,10 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? (isSelected ? AppColors.inkTeal : AppColors.slate);
-    final effectiveTextColor = textColor ?? (isSelected ? AppColors.inkTeal : AppColors.ink);
+    final effectiveIconColor =
+        iconColor ?? (isSelected ? AppColors.inkTeal : AppColors.slate);
+    final effectiveTextColor =
+        textColor ?? (isSelected ? AppColors.inkTeal : AppColors.ink);
 
     return InkWell(
       onTap: onTap,
@@ -178,11 +219,14 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.inkTeal.withValues(alpha: 0.08) : Colors.transparent,
+          color: isSelected
+              ? AppColors.inkTeal.withValues(alpha: 0.08)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
-          mainAxisAlignment: isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+          mainAxisAlignment:
+              isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
             Icon(
               isSelected ? activeIcon : icon,
@@ -195,7 +239,8 @@ class _NavItem extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: effectiveTextColor,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),

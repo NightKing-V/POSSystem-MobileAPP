@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-import './dashboard_home_view.dart';
 import '../../../inventory/presentation/pages/add_product_view.dart';
 import '../../../pos/presentation/pages/cart_view.dart';
 import '../../../settings/presentation/pages/settings_view.dart';
 import '../../../staff/presentation/pages/employees_list_view.dart';
 import '../../../suppliers/presentation/pages/purchase_orders_list_view.dart';
-import './side_nav_panel.dart';
-import './sidebar.dart';
+import '../widgets/side_nav_panel.dart';
+import '../widgets/sidebar.dart';
+import './dashboard_home_view.dart';
 
 /// The main landing screen after a business/branch is selected.
 /// Featuring a bottom navigation bar to switch between Home, Add Product, Cart, and Settings.
@@ -104,13 +104,15 @@ class _DashboardPageState extends State<DashboardPage> {
       case 1:
         return const AddProductView();
       case 2:
-        // CartView connected to real Org & Location
         return CartView(
           orgId: widget.orgId,
           locationId: widget.locationId,
         );
       case 3:
-        return SettingsView(businessName: widget.businessName);
+        return SettingsView(
+          businessName: widget.businessName,
+          orgId: widget.orgId,
+        );
       default:
         return Container();
     }
@@ -186,7 +188,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 backgroundColor: Colors.white,
                 selectedItemColor: AppColors.inkTeal,
                 unselectedItemColor: AppColors.slate,
-                selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                selectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 unselectedLabelStyle: const TextStyle(fontSize: 12),
                 type: BottomNavigationBarType.fixed,
                 elevation: 0,

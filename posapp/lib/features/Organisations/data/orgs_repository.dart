@@ -149,4 +149,11 @@ class OrgsRepository {
       },
     );
   }
+
+  /// Delete an organization / business (temporary/destructive)
+  Future<ApiResponse<Map<String, dynamic>>> deleteOrganization(String orgId) async {
+    return _apiClient.delete<Map<String, dynamic>>(
+      '${ApiConstants.orgs}/$orgId',
+    );
+  }
 }

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../inventory/presentation/pages/categories_list_view.dart';
+import '../../../auth/data/auth_repository.dart';
+import '../../../auth/presentation/pages/login_page.dart';
 import '../../../customers/presentation/pages/customers_list_view.dart';
-import '../../../staff/presentation/pages/employees_list_view.dart';
+import '../../../inventory/presentation/pages/categories_list_view.dart';
 import '../../../inventory/presentation/pages/products_list_view.dart';
+import '../../../settings/presentation/widgets/settings_dialogs.dart';
+import '../../../staff/presentation/pages/employees_list_view.dart';
 import '../../../suppliers/presentation/pages/suppliers_list_view.dart';
 
+/// Navigation Drawer for mobile/narrow viewports.
 class Sidebar extends StatelessWidget {
   const Sidebar({
     super.key,
@@ -15,14 +19,33 @@ class Sidebar extends StatelessWidget {
 
   final String businessName;
 
+  Future<void> _handleLogout(BuildContext context) async {
+    Navigator.of(context).pop(); // close drawer
+    final confirmed = await SettingsDialogs.confirmLogout(context);
+    if (!confirmed || !context.mounted) return;
+
+    final authRepo = AuthRepository();
+    await authRepo.logout();
+
+    if (!context.mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final initial = businessName.isNotEmpty
+        ? businessName.substring(0, 1).toUpperCase()
+        : 'B';
+
     return Drawer(
       backgroundColor: AppColors.paper,
       elevation: 16,
       child: Column(
         children: [
-          _buildHeader(context),
+          _buildHeader(context, initial),
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -33,7 +56,11 @@ class Sidebar extends StatelessWidget {
                   label: context.tr('inventory.products'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProductsListView()));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProductsListView(),
+                      ),
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -41,7 +68,11 @@ class Sidebar extends StatelessWidget {
                   label: context.tr('inventory.categories'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoriesListView()));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CategoriesListView(),
+                      ),
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -49,7 +80,11 @@ class Sidebar extends StatelessWidget {
                   label: context.tr('customers.title'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CustomersListView()));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CustomersListView(),
+                      ),
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -57,7 +92,11 @@ class Sidebar extends StatelessWidget {
                   label: context.tr('staff.employees'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmployeesListView()));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const EmployeesListView(),
+                      ),
+                    );
                   },
                 ),
                 _DrawerItem(
@@ -65,10 +104,19 @@ class Sidebar extends StatelessWidget {
                   label: context.tr('suppliers.title'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SuppliersListView()));
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SuppliersListView(),
+                      ),
+                    );
                   },
                 ),
-                const Divider(color: AppColors.hairline, height: 24, indent: 24, endIndent: 24),
+                const Divider(
+                  color: AppColors.hairline,
+                  height: 24,
+                  indent: 24,
+                  endIndent: 24,
+                ),
                 _DrawerItem(
                   icon: Icons.settings_outlined,
                   label: context.tr('settings.title'),
@@ -84,7 +132,7 @@ class Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, String initial) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.only(
@@ -105,9 +153,9 @@ class Sidebar extends StatelessWidget {
           CircleAvatar(
             radius: 32,
             backgroundColor: AppColors.inkTeal.withValues(alpha: 0.12),
-            child: const Text(
-              'JD', // User initials for John Doe
-              style: TextStyle(
+            child: Text(
+              initial,
+              style: const TextStyle(
                 color: AppColors.inkTeal,
                 fontWeight: FontWeight.bold,
                 fontSize: 24,
@@ -116,7 +164,7 @@ class Sidebar extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'John Doe',
+            businessName,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
@@ -124,7 +172,7 @@ class Sidebar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Store Admin · $businessName',
+            'Store Admin · Active Session',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.slate,
                 ),
@@ -147,9 +195,7 @@ class Sidebar extends StatelessWidget {
         label: context.tr('settings.logout'),
         textColor: AppColors.error,
         iconColor: AppColors.error,
-        onTap: () {
-          Navigator.of(context).pop();
-        },
+        onTap: () => _handleLogout(context),
       ),
     );
   }

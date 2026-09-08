@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/models/supplier_mock_data.dart';
-import '../../../inventory/domain/models/product.dart';
 import '../../../dashboard/domain/mock_data.dart';
+import '../../../inventory/domain/models/product.dart';
+import '../../domain/models/supplier_mock_data.dart';
+import '../widgets/po_line_item_row.dart';
+import '../widgets/po_product_picker_sheet.dart';
 
+/// Clean screen for creating or editing purchase orders.
 class CreateEditPurchaseOrderView extends StatefulWidget {
   const CreateEditPurchaseOrderView({super.key, this.vendor, this.order});
 
@@ -22,7 +24,7 @@ class _CreateEditPurchaseOrderViewState
   String? _selectedVendorId;
   String? _selectedLocationId;
   DateTime _expectedDate = DateTime.now().add(const Duration(days: 7));
-  final List<_LineItem> _lines = [];
+  final List<PoLineItem> _lines = [];
 
   bool get _isEditing => widget.order != null;
 
@@ -38,13 +40,14 @@ class _CreateEditPurchaseOrderViewState
       _expectedDate = o.expectedDate;
       _noteCtrl.text = o.note;
       for (final item in o.items) {
-        _lines.add(_LineItem(
-          product: item.product,
-          qtyCtrl: TextEditingController(
-              text: item.orderedQty.toString()),
-          costCtrl: TextEditingController(
-              text: item.unitCost.toStringAsFixed(2)),
-        ));
+        _lines.add(
+          PoLineItem(
+            product: item.product,
+            qtyCtrl: TextEditingController(text: item.orderedQty.toString()),
+            costCtrl:
+                TextEditingController(text: item.unitCost.toStringAsFixed(2)),
+          ),
+        );
       }
     }
   }
@@ -59,20 +62,22 @@ class _CreateEditPurchaseOrderViewState
   }
 
   double get _orderTotal => _lines.fold(
-      0.0,
-      (s, l) =>
-          s +
-          (int.tryParse(l.qtyCtrl.text) ?? 0) *
-              (double.tryParse(l.costCtrl.text) ?? 0.0));
+        0.0,
+        (s, l) =>
+            s +
+            (int.tryParse(l.qtyCtrl.text) ?? 0) *
+                (double.tryParse(l.costCtrl.text) ?? 0.0),
+      );
 
   void _addLine(Product p) {
     setState(() {
-      _lines.add(_LineItem(
-        product: p,
-        qtyCtrl: TextEditingController(text: '1'),
-        costCtrl: TextEditingController(
-            text: p.price.toStringAsFixed(2)),
-      ));
+      _lines.add(
+        PoLineItem(
+          product: p,
+          qtyCtrl: TextEditingController(text: '1'),
+          costCtrl: TextEditingController(text: p.price.toStringAsFixed(2)),
+        ),
+      );
     });
   }
 
@@ -113,26 +118,29 @@ class _CreateEditPurchaseOrderViewState
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: const Color(0xFF2563EB).withAlpha(20),
+                color: const Color(0xFF2563EB).withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.send_rounded,
-                  color: Color(0xFF2563EB), size: 28),
+              child: const Icon(
+                Icons.send_rounded,
+                color: Color(0xFF2563EB),
+                size: 28,
+              ),
             ),
             const SizedBox(height: 14),
-            Text('Order Sent!',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontSize: 18)),
+            Text(
+              'Order Sent!',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontSize: 18),
+            ),
             const SizedBox(height: 6),
             Text(
               'The purchase order has been sent\nto ${_selectedVendorId != null ? vendorName(_selectedVendorId!) : 'the supplier'}.',
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontSize: 13),
+              style:
+                  Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
             ),
           ],
         ),
@@ -149,10 +157,13 @@ class _CreateEditPurchaseOrderViewState
                 backgroundColor: AppColors.inkTeal,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: const Text('Done',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Done',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],
@@ -166,8 +177,7 @@ class _CreateEditPurchaseOrderViewState
         content: Text(msg),
         backgroundColor: isError ? AppColors.error : AppColors.inkTeal,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -182,10 +192,8 @@ class _CreateEditPurchaseOrderViewState
         titleSpacing: 16,
         title: Text(
           _isEditing ? 'Edit Purchase Order' : 'New Purchase Order',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontSize: 17),
+          style:
+              Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(
@@ -194,8 +202,7 @@ class _CreateEditPurchaseOrderViewState
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: ListView(
-              padding:
-                  const EdgeInsets.fromLTRB(24, 16, 24, 120),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
               children: [
                 // ── Header card (vendor, location, date) ──────────────────
                 _SectionCard(
@@ -207,11 +214,14 @@ class _CreateEditPurchaseOrderViewState
                       hint: const Text('Select a vendor'),
                       decoration: const InputDecoration(),
                       items: mockVendors
-                          .map((v) => DropdownMenuItem(
-                              value: v.id, child: Text(v.name)))
+                          .map(
+                            (v) => DropdownMenuItem(
+                              value: v.id,
+                              child: Text(v.name),
+                            ),
+                          )
                           .toList(),
-                      onChanged: (v) =>
-                          setState(() => _selectedVendorId = v),
+                      onChanged: (v) => setState(() => _selectedVendorId = v),
                     ),
                     const SizedBox(height: 16),
                     _Label('Delivery Location *'),
@@ -219,11 +229,14 @@ class _CreateEditPurchaseOrderViewState
                       initialValue: _selectedLocationId,
                       decoration: const InputDecoration(),
                       items: mockLocations
-                          .map((l) => DropdownMenuItem(
-                              value: l.id, child: Text(l.name)))
+                          .map(
+                            (l) => DropdownMenuItem(
+                              value: l.id,
+                              child: Text(l.name),
+                            ),
+                          )
                           .toList(),
-                      onChanged: (v) =>
-                          setState(() => _selectedLocationId = v),
+                      onChanged: (v) => setState(() => _selectedLocationId = v),
                     ),
                     const SizedBox(height: 16),
                     _Label('Expected Delivery Date'),
@@ -236,19 +249,24 @@ class _CreateEditPurchaseOrderViewState
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color: AppColors.hairline, width: 1.5),
+                            color: AppColors.hairline,
+                            width: 1.5,
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today_outlined,
-                                size: 16, color: AppColors.slate),
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: AppColors.slate,
+                            ),
                             const SizedBox(width: 10),
                             Text(
                               '${_expectedDate.day}/${_expectedDate.month}/${_expectedDate.year}',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
-                                  ?.copyWith(color: AppColors.ink),
+                                  ?.copyWith(fontSize: 14),
                             ),
                           ],
                         ),
@@ -258,48 +276,83 @@ class _CreateEditPurchaseOrderViewState
                 ),
                 const SizedBox(height: 16),
 
-                // ── Line items ────────────────────────────────────────────
+                // ── Products / Line items ─────────────────────────────────
                 _SectionCard(
-                  title: 'Line Items',
+                  title: 'Line items',
                   children: [
                     if (_lines.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text('No items added yet.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(fontSize: 12)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 36,
+                              color: AppColors.slate.withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No products added yet',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: AppColors.slate),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _lines.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (_, i) => PoLineItemRow(
+                          line: _lines[i],
+                          onRemove: () => _removeLine(i),
+                          onChanged: () => setState(() {}),
+                        ),
                       ),
-                    ..._lines.asMap().entries.map((e) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _LineItemRow(
-                            line: e.value,
-                            onRemove: () => _removeLine(e.key),
-                            onChanged: () => setState(() {}),
-                          ),
-                        )),
-                    _AddProductButton(onSelect: _addLine),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add product'),
+                      onPressed: () => PoProductPickerSheet.show(
+                        context,
+                        onSelect: _addLine,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.inkTeal,
+                        side: const BorderSide(
+                          color: AppColors.inkTeal,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        minimumSize: const Size(double.infinity, 44),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // ── Order total ───────────────────────────────────────────
-                if (_lines.isNotEmpty) ...[
-                  _OrderTotalCard(total: _orderTotal),
-                  const SizedBox(height: 16),
-                ],
+                // ── Order Total summary card ──────────────────────────────
+                _OrderTotalCard(total: _orderTotal),
+                const SizedBox(height: 16),
 
-                // ── Note ─────────────────────────────────────────────────
+                // ── Note / Remarks ────────────────────────────────────────
                 _SectionCard(
-                  title: 'Note',
+                  title: 'Notes & Instructions',
                   children: [
                     TextFormField(
                       controller: _noteCtrl,
                       maxLines: 3,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
-                          hintText: 'Internal note (optional)'),
+                        hintText: 'Internal note (optional)',
+                      ),
                     ),
                   ],
                 ),
@@ -316,270 +369,6 @@ class _CreateEditPurchaseOrderViewState
   }
 }
 
-// ─── Supporting widgets ───────────────────────────────────────────────────────
-
-class _LineItem {
-  _LineItem({
-    required this.product,
-    required this.qtyCtrl,
-    required this.costCtrl,
-  });
-
-  final Product product;
-  final TextEditingController qtyCtrl;
-  final TextEditingController costCtrl;
-
-  double get lineTotal =>
-      (int.tryParse(qtyCtrl.text) ?? 0) *
-      (double.tryParse(costCtrl.text) ?? 0.0);
-
-  void dispose() {
-    qtyCtrl.dispose();
-    costCtrl.dispose();
-  }
-}
-
-class _LineItemRow extends StatelessWidget {
-  const _LineItemRow({
-    required this.line,
-    required this.onRemove,
-    required this.onChanged,
-  });
-
-  final _LineItem line;
-  final VoidCallback onRemove;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.paper,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-            color: AppColors.hairline.withAlpha(150), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(line.product.name,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
-              ),
-              GestureDetector(
-                onTap: onRemove,
-                child: const Icon(Icons.close_rounded,
-                    size: 16, color: AppColors.error),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _MiniField(
-                  controller: line.qtyCtrl,
-                  label: 'Qty',
-                  numeric: true,
-                  onChanged: (_) => onChanged(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: _MiniField(
-                  controller: line.costCtrl,
-                  label: 'Unit Cost (Rs.)',
-                  decimal: true,
-                  onChanged: (_) => onChanged(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                width: 80,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text('Total',
-                        style: TextStyle(
-                            fontSize: 10, color: AppColors.slate)),
-                    Text('Rs. ${line.lineTotal.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: AppColors.inkTeal)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniField extends StatelessWidget {
-  const _MiniField({
-    required this.controller,
-    required this.label,
-    required this.onChanged,
-    this.numeric = false,
-    this.decimal = false,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final ValueChanged<String> onChanged;
-  final bool numeric;
-  final bool decimal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(fontSize: 10, color: AppColors.slate)),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          onChanged: onChanged,
-          keyboardType: decimal
-              ? const TextInputType.numberWithOptions(decimal: true)
-              : TextInputType.number,
-          inputFormatters: [
-            if (numeric) FilteringTextInputFormatter.digitsOnly,
-            if (decimal)
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-          ],
-          decoration: const InputDecoration(
-            isDense: true,
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          ),
-          style: const TextStyle(fontSize: 13),
-        ),
-      ],
-    );
-  }
-}
-
-class _AddProductButton extends StatelessWidget {
-  const _AddProductButton({required this.onSelect});
-
-  final ValueChanged<Product> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      icon: const Icon(Icons.add, size: 16),
-      label: const Text('Add product'),
-      onPressed: () => showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => _ProductPickerSheet(onSelect: onSelect),
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.inkTeal,
-        side: const BorderSide(color: AppColors.inkTeal, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        minimumSize: const Size(double.infinity, 44),
-      ),
-    );
-  }
-}
-
-class _ProductPickerSheet extends StatefulWidget {
-  const _ProductPickerSheet({required this.onSelect});
-
-  final ValueChanged<Product> onSelect;
-
-  @override
-  State<_ProductPickerSheet> createState() => _ProductPickerSheetState();
-}
-
-class _ProductPickerSheetState extends State<_ProductPickerSheet> {
-  String _q = '';
-
-  List<Product> get _filtered {
-    if (_q.isEmpty) return Product.mockProducts;
-    return Product.mockProducts
-        .where((p) => p.name.toLowerCase().contains(_q.toLowerCase()))
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      builder: (_, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.hairline,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                onChanged: (v) => setState(() => _q = v),
-                decoration: const InputDecoration(
-                  hintText: 'Search products…',
-                  prefixIcon:
-                      Icon(Icons.search_rounded, color: AppColors.slate, size: 20),
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                controller: ctrl,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: _filtered.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 6),
-                itemBuilder: (_, i) => ListTile(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  tileColor: AppColors.paper,
-                  title: Text(_filtered[i].name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13)),
-                  trailing: Text(
-                      'Rs. ${_filtered[i].price.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                          color: AppColors.inkTeal,
-                          fontWeight: FontWeight.bold)),
-                  onTap: () {
-                    widget.onSelect(_filtered[i]);
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _OrderTotalCard extends StatelessWidget {
   const _OrderTotalCard({required this.total});
 
@@ -590,19 +379,23 @@ class _OrderTotalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.inkTeal.withAlpha(8),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.inkTeal.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: AppColors.inkTeal.withAlpha(40), width: 1.5),
+          color: AppColors.inkTeal.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Order Total',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontSize: 14)),
+          Text(
+            'Order Total',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontSize: 14),
+          ),
           Text(
             'Rs. ${total.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -630,8 +423,11 @@ class _ActionBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-            top: BorderSide(
-                color: AppColors.hairline.withAlpha(150), width: 1.5)),
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.6),
+            width: 1.5,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -641,13 +437,18 @@ class _ActionBar extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.slate,
                 side: const BorderSide(
-                    color: AppColors.hairline, width: 1.5),
+                  color: AppColors.hairline,
+                  width: 1.5,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 50),
               ),
-              child: const Text('Save as Draft',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              child: const Text(
+                'Save as Draft',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -655,15 +456,18 @@ class _ActionBar extends StatelessWidget {
             flex: 2,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text('Send Order',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Send Order',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               onPressed: onSend,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.inkTeal,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 50),
               ),
             ),
@@ -688,16 +492,20 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppColors.hairline.withAlpha(150), width: 1.5),
+          color: AppColors.hairline.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontSize: 15)),
+          Text(
+            title,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontSize: 15),
+          ),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -715,11 +523,14 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.ink,
               fontWeight: FontWeight.bold,
-              fontSize: 13)),
+              fontSize: 13,
+            ),
+      ),
     );
   }
 }

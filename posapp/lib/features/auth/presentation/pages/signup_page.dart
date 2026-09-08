@@ -4,6 +4,9 @@ import '../../../../core/api/api_helper.dart';
 import '../../data/auth_repository.dart';
 import '../../../Organisations/presentation/pages/select_business.dart';
 import '../widgets/auth_text_field.dart';
+import '../widgets/auth_wordmark.dart';
+import '../widgets/auth_step_indicator.dart';
+import '../widgets/otp_verification_view.dart';
 import './login_page.dart';
 
 /// Multi-step sign up flow. UI only — no auth wiring yet.
@@ -203,10 +206,10 @@ class _SignupPageState extends State<SignupPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _Wordmark(),
+                        const AuthWordmark(),
                         const SizedBox(height: 24),
                         if (_step != _Step.creating && _step != _Step.verify) ...[
-                          _StepProgress(current: _indicatorIndex, labels: _stepLabels),
+                          AuthStepIndicator(currentIndex: _indicatorIndex, labels: _stepLabels),
                           const SizedBox(height: 24),
                         ],
                         ClipRect(
@@ -539,49 +542,19 @@ class _CreatingBusinessView extends StatelessWidget {
   }
 }
 
-class _VerifyEmailView extends StatefulWidget {
+class _VerifyEmailView extends StatelessWidget {
   const _VerifyEmailView({required this.email, required this.onContinue});
 
   final String email;
   final VoidCallback onContinue;
 
-  @override
-  State<_VerifyEmailView> createState() => _VerifyEmailViewState();
-}
-
-class _VerifyEmailViewState extends State<_VerifyEmailView> {
-  final _otpCtrl = TextEditingController();
-  final _authRepo = AuthRepository();
-  bool _isLoading = false;
-  String? _errorText;
-
-  @override
-  void dispose() {
-    _otpCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleVerify() async {
-    final token = _otpCtrl.text.trim();
-    if (token.length < 6) {
-      setState(() => _errorText = 'Please enter a valid 6-digit OTP code');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorText = null;
-    });
-
-    final response = await _authRepo.verifyOtp(
-      VerifyOtpDto(email: widget.email, token: token),
+  Future<void> _handleVerify(BuildContext context, String token) async {
+    final authRepo = AuthRepository();
+    final response = await authRepo.verifyOtp(
+      VerifyOtpDto(email: email, token: token),
     );
 
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
+    if (!context.mounted) return;
 
     if (response.isSuccess) {
       ApiHelper.showSuccessSnackBar(context, 'Email verified successfully!');
@@ -589,141 +562,24 @@ class _VerifyEmailViewState extends State<_VerifyEmailView> {
         MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
       );
     } else {
-      setState(() {
-        _errorText = response.errorMessage ?? 'Verification failed. Please try again.';
-      });
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
+      throw Exception(response.errorMessage ?? 'Verification failed. Please try again.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.marigold.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.mark_email_read_outlined, color: AppColors.inkTeal, size: 26),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          'Verify your email',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.ink,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'We sent a 6-digit code to\n${widget.email}',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 24),
-        AuthTextField(
-          label: 'Verification Code',
-          hintText: 'Enter 6-digit OTP',
-          controller: _otpCtrl,
-          keyboardType: TextInputType.number,
-        ),
-        if (_errorText != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            _errorText!,
-            style: const TextStyle(color: AppColors.error, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ],
-        const SizedBox(height: 28),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _handleVerify,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.inkTeal,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                  )
-                : Text(
-                    "Verify and Continue",
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('OTP resent to your email')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.inkTeal),
-            child: const Text('Resend code', style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ),
-      ],
+    return OtpVerificationView(
+      email: email,
+      title: 'Verify your email',
+      subtitle: 'We sent a 6-digit code to\n$email',
+      buttonLabel: 'Verify and Continue',
+      onVerify: (token) => _handleVerify(context, token),
+      onResend: () async {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OTP resent to your email')),
+        );
+      },
     );
-  }
-}
-
-/// Thin step indicator: filled/labeled bars, like the progress rail on
-/// Google's account-creation flow. Purely presentational.
-class _StepProgress extends StatelessWidget {
-  const _StepProgress({required this.current, required this.labels});
-
-  final int current;
-  final List<String> labels;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var i = 0; i < labels.length; i++) ...[
-          Expanded(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              height: 4,
-              decoration: BoxDecoration(
-                color: i <= current ? AppColors.inkTeal : AppColors.hairline,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          if (i != labels.length - 1) const SizedBox(width: 6),
-        ],
-      ],
-    );
-  }
-}
-
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Image.asset('assets/logo.png', height: 64));
   }
 }

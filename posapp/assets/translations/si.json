@@ -32,7 +32,23 @@
     "already_have_account": "දැනටමත් ගිණුමක් තිබේද?",
     "verify_email": "විද්‍යුත් තැපෑල තහවුරු කරන්න",
     "enter_otp": "OTP කේතය ඇතුලත් කරන්න",
-    "resend_otp": "කේතය නැවත එවන්න"
+    "resend_otp": "කේතය නැවත එවන්න",
+    "reset_password": "මුරපදය නැවත සකසන්න",
+    "reset_password_title": "ඔබගේ මුරපදය නැවත සකසන්න",
+    "reset_password_desc": "ඔබගේ විද්‍යුත් තැපැල් ලිපිනය ඇතුලත් කරන්න. අපි මුරපද ප්‍රතිසාධන කේතයක් එවන්නෙමු.",
+    "send_reset_code": "ප්‍රතිසාධන කේතය එවන්න",
+    "set_new_password_title": "නව මුරපදයක් සකසන්න",
+    "set_new_password_desc": "ඔබගේ විද්‍යුත් තැපෑලට ලැබුණු කේතය සහ නව මුරපදය ඇතුලත් කරන්න.",
+    "reset_code": "ප්‍රතිසාධන කේතය / ටෝකනය",
+    "reset_code_hint": "කේතය හෝ ටෝකනය ඇතුලත් කරන්න",
+    "new_password": "නව මුරපදය",
+    "confirm_new_password": "නව මුරපදය තහවුරු කරන්න",
+    "set_password_btn": "මුරපදය නැවත සකසන්න",
+    "reset_success_title": "මුරපදය සාර්ථකව වෙනස් විය!",
+    "reset_success_desc": "ඔබගේ මුරපදය සාර්ථකව නැවත සකස් කරන ලදී. ඔබට දැන් නව මුරපදයෙන් ඇතුල් විය හැක.",
+    "back_to_login": "නැවත ඇතුල් වීමට යන්න",
+    "password_min_length": "මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුය",
+    "passwords_dont_match": "මුරපද නොගැලපේ"
   },
   "orgs": {
     "select_business": "ව්‍යාපාරය තෝරන්න",
@@ -172,6 +188,11 @@
     "select_language": "භාෂාව තෝරන්න",
     "logout": "පිටවීම",
     "logout_confirm_title": "පිටවෙන්නද?",
-    "logout_confirm_msg": "ඔබට මෙම පද්ධතියෙන් ඉවත් වීමට අවශ්‍ය බව සහතිකද?"
+    "logout_confirm_msg": "ඔබට මෙම පද්ධතියෙන් ඉවත් වීමට අවශ්‍ය බව සහතිකද?",
+    "danger_zone": "අනතුරු කලාපය (තාවකාලික)",
+    "delete_business": "ව්‍යාපාරය මකන්න",
+    "delete_business_desc": "මෙම ව්‍යාපාරය සහ එහි සියලුම දත්ත ස්ථිරවම මකා දමන්න",
+    "delete_business_confirm_title": "ව්‍යාපාරය මකන්නද?",
+    "delete_business_confirm_msg": "මෙම ව්‍යාපාරය ස්ථිරවම මකා දැමීමට ඔබට විශ්වාසද? සියලුම ශාඛා, තොග සහ වාර්තා මකා දැමෙනු ඇත."
   }
 }

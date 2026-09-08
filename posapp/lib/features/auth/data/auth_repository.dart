@@ -47,12 +47,51 @@ class RegisterDto {
 class VerifyOtpDto {
   final String email;
   final String token;
+  final String? type;
 
-  const VerifyOtpDto({required this.email, required this.token});
+  const VerifyOtpDto({
+    required this.email,
+    required this.token,
+    this.type,
+  });
 
   Map<String, dynamic> toJson() => {
         'email': email.trim(),
         'token': token.trim(),
+        if (type != null && type!.isNotEmpty) 'type': type,
+      };
+}
+
+/// DTO for Forgot Password Request
+class ForgotPasswordDto {
+  final String email;
+  final String? redirectTo;
+
+  const ForgotPasswordDto({
+    required this.email,
+    this.redirectTo,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'email': email.trim(),
+        if (redirectTo != null && redirectTo!.isNotEmpty)
+          'redirectTo': redirectTo,
+      };
+}
+
+/// DTO for Reset Password Submission
+class ResetPasswordDto {
+  final String newPassword;
+  final String accessToken;
+
+  const ResetPasswordDto({
+    required this.newPassword,
+    required this.accessToken,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'newPassword': newPassword,
+        'accessToken': accessToken.trim(),
       };
 }
 
@@ -76,11 +115,13 @@ class AuthRepository {
     if (response.isSuccess && response.data != null) {
       final data = response.data!;
       // Extract access token from response (handling NestJS / Supabase session output)
-      String? token;
-      if (data.containsKey('access_token')) {
-        token = data['access_token'] as String?;
-      } else if (data.containsKey('session') && data['session'] is Map) {
-        token = data['session']['access_token'] as String?;
+      String? token = data['accessToken'] as String? ??
+          data['access_token'] as String? ??
+          data['token'] as String?;
+
+      if (token == null && data['session'] is Map) {
+        token = data['session']['access_token'] as String? ??
+            data['session']['accessToken'] as String?;
       }
 
       if (token != null && token.isNotEmpty) {
@@ -104,11 +145,13 @@ class AuthRepository {
 
     if (response.isSuccess && response.data != null) {
       final data = response.data!;
-      String? token;
-      if (data.containsKey('access_token')) {
-        token = data['access_token'] as String?;
-      } else if (data.containsKey('session') && data['session'] is Map) {
-        token = data['session']['access_token'] as String?;
+      String? token = data['accessToken'] as String? ??
+          data['access_token'] as String? ??
+          data['token'] as String?;
+
+      if (token == null && data['session'] is Map) {
+        token = data['session']['access_token'] as String? ??
+            data['session']['accessToken'] as String?;
       }
 
       if (token != null && token.isNotEmpty) {
@@ -128,7 +171,15 @@ class AuthRepository {
 
     if (response.isSuccess && response.data != null) {
       final data = response.data!;
-      String? token = data['accessToken'] as String?;
+      String? token = data['accessToken'] as String? ??
+          data['access_token'] as String? ??
+          data['token'] as String?;
+
+      if (token == null && data['session'] is Map) {
+        token = data['session']['access_token'] as String? ??
+            data['session']['accessToken'] as String?;
+      }
+
       if (token != null && token.isNotEmpty) {
         await TokenStorage.saveToken(token);
       }
@@ -138,6 +189,26 @@ class AuthRepository {
     }
 
     return response;
+  }
+
+  /// Request password reset link / code
+  Future<ApiResponse<Map<String, dynamic>>> forgotPassword(
+    ForgotPasswordDto dto,
+  ) async {
+    return await _apiClient.post<Map<String, dynamic>>(
+      ApiConstants.forgotPassword,
+      body: dto.toJson(),
+    );
+  }
+
+  /// Reset password using verification token/code and new password
+  Future<ApiResponse<Map<String, dynamic>>> resetPassword(
+    ResetPasswordDto dto,
+  ) async {
+    return await _apiClient.post<Map<String, dynamic>>(
+      ApiConstants.resetPassword,
+      body: dto.toJson(),
+    );
   }
 
   /// Logout user and clear tokens

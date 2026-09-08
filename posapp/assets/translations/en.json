@@ -32,7 +32,23 @@
     "already_have_account": "Already have an account?",
     "verify_email": "Verify Email",
     "enter_otp": "Enter OTP",
-    "resend_otp": "Resend Code"
+    "resend_otp": "Resend Code",
+    "reset_password": "Reset Password",
+    "reset_password_title": "Reset your password",
+    "reset_password_desc": "Enter your email address and we'll send you a password reset code.",
+    "send_reset_code": "Send Reset Code",
+    "set_new_password_title": "Set new password",
+    "set_new_password_desc": "Enter the code sent to your email and your new password.",
+    "reset_code": "Reset Code / Token",
+    "reset_code_hint": "Enter code or token",
+    "new_password": "New Password",
+    "confirm_new_password": "Confirm New Password",
+    "set_password_btn": "Reset Password",
+    "reset_success_title": "Password Reset!",
+    "reset_success_desc": "Your password has been reset successfully. You can now sign in with your new password.",
+    "back_to_login": "Back to Sign in",
+    "password_min_length": "Password must be at least 8 characters",
+    "passwords_dont_match": "Passwords do not match"
   },
   "orgs": {
     "select_business": "Select a business",
@@ -172,6 +188,11 @@
     "select_language": "Select Language",
     "logout": "Log Out",
     "logout_confirm_title": "Log out?",
-    "logout_confirm_msg": "Are you sure you want to log out and switch business location?"
+    "logout_confirm_msg": "Are you sure you want to log out and switch business location?",
+    "danger_zone": "Danger Zone (Temporary)",
+    "delete_business": "Delete Business",
+    "delete_business_desc": "Permanently delete this business and all its data",
+    "delete_business_confirm_title": "Delete Business?",
+    "delete_business_confirm_msg": "Are you sure you want to permanently delete this business? All associated branches, inventory, and records will be deleted."
   }
 }

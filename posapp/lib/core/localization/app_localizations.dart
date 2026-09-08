@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_locales.dart';
@@ -17,24 +18,50 @@ class AppLocalizations {
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
+  Future<String?> _loadAssetString(String langCode) async {
+    final possiblePaths = [
+      'assets/translations/$langCode.json',
+      'translations/$langCode.json',
+    ];
+
+    for (final path in possiblePaths) {
+      try {
+        final content = await rootBundle.loadString(path);
+        if (content.isNotEmpty) return content;
+      } catch (_) {}
+    }
+    return null;
+  }
+
   /// Loads translation map from JSON
   Future<bool> load() async {
     // 1. Load fallback (English)
     try {
-      final fallbackJson =
-          await rootBundle.loadString('assets/translations/en.json');
-      final Map<String, dynamic> fallbackMap = json.decode(fallbackJson);
-      _fallbackStrings = _flattenMap(fallbackMap);
-    } catch (_) {}
+      final fallbackJson = await _loadAssetString('en');
+      if (fallbackJson != null) {
+        final Map<String, dynamic> fallbackMap = json.decode(fallbackJson);
+        _fallbackStrings = _flattenMap(fallbackMap);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Localization error loading fallback (en): $e');
+      }
+    }
 
     // 2. Load current locale if not English
     if (locale.languageCode != 'en') {
       try {
-        final jsonString = await rootBundle
-            .loadString('assets/translations/${locale.languageCode}.json');
-        final Map<String, dynamic> jsonMap = json.decode(jsonString);
-        _localizedStrings = _flattenMap(jsonMap);
-      } catch (_) {
+        final jsonString = await _loadAssetString(locale.languageCode);
+        if (jsonString != null) {
+          final Map<String, dynamic> jsonMap = json.decode(jsonString);
+          _localizedStrings = _flattenMap(jsonMap);
+        } else {
+          _localizedStrings = _fallbackStrings;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Localization error loading ${locale.languageCode}: $e');
+        }
         _localizedStrings = _fallbackStrings;
       }
     } else {

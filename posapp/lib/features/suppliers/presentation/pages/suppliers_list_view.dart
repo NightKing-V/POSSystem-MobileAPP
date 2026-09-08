@@ -42,11 +42,14 @@ class _SuppliersListViewState extends State<SuppliersListView> {
     if (_search.isEmpty) return _suppliers;
     final q = _search.toLowerCase();
     return _suppliers
-        .where((v) =>
-            v.name.toLowerCase().contains(q) ||
-            (v.contactPerson != null && v.contactPerson!.toLowerCase().contains(q)) ||
-            (v.phone != null && v.phone!.contains(q)) ||
-            (v.email != null && v.email!.toLowerCase().contains(q)))
+        .where(
+          (v) =>
+              v.name.toLowerCase().contains(q) ||
+              (v.contactPerson != null &&
+                  v.contactPerson!.toLowerCase().contains(q)) ||
+              (v.phone != null && v.phone!.contains(q)) ||
+              (v.email != null && v.email!.toLowerCase().contains(q)),
+        )
         .toList();
   }
 
@@ -70,16 +73,18 @@ class _SuppliersListViewState extends State<SuppliersListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(context.tr('suppliers.title'),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontSize: 17)),
-            Text('${list.length} suppliers',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontSize: 12)),
+            Text(
+              context.tr('suppliers.title'),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontSize: 17),
+            ),
+            Text(
+              '${list.length} suppliers',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -97,12 +102,18 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                     onChanged: (v) => setState(() => _search = v),
                     decoration: InputDecoration(
                       hintText: context.tr('common.search'),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: AppColors.slate, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.slate,
+                        size: 20,
+                      ),
                       suffixIcon: _search.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear_rounded,
-                                  size: 18, color: AppColors.slate),
+                              icon: const Icon(
+                                Icons.clear_rounded,
+                                size: 18,
+                                color: AppColors.slate,
+                              ),
                               onPressed: () {
                                 _searchCtrl.clear();
                                 setState(() => _search = '');
@@ -117,46 +128,58 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : list.isEmpty
-                          ? const _EmptyState()
-                          : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                              itemCount: list.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 10),
-                              itemBuilder: (_, i) {
-                                final s = list[i];
-                                return Card(
-                                  margin: EdgeInsets.zero,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: AppColors.hairline.withValues(alpha: 0.6),
-                                      width: 1.5,
+                      ? const _EmptyState()
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                          itemCount: list.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, i) {
+                            final s = list[i];
+                            return Card(
+                              margin: EdgeInsets.zero,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: AppColors.hairline.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: AppColors.inkTeal.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  child: Text(
+                                    s.name.isNotEmpty
+                                        ? s.name[0].toUpperCase()
+                                        : 'S',
+                                    style: const TextStyle(
+                                      color: AppColors.inkTeal,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
-                                      child: Text(
-                                        s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
-                                        style: const TextStyle(
-                                          color: AppColors.inkTeal,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      s.name,
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
-                                    ),
-                                    subtitle: Text(
-                                      s.contactPerson ?? s.phone ?? s.email ?? '',
-                                      style: const TextStyle(color: AppColors.slate, fontSize: 13),
-                                    ),
+                                ),
+                                title: Text(
+                                  s.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                                subtitle: Text(
+                                  s.contactPerson ?? s.phone ?? s.email ?? '',
+                                  style: const TextStyle(
+                                    color: AppColors.slate,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -168,7 +191,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
           final res = await Navigator.of(context).push(
             MaterialPageRoute(
               fullscreenDialog: true,
-              builder: (_) => const AddEditSupplierView(),
+              builder: (_) => AddEditSupplierView(orgId: widget.orgId),
             ),
           );
           if (res == true) {
@@ -178,8 +201,10 @@ class _SuppliersListViewState extends State<SuppliersListView> {
         backgroundColor: AppColors.inkTeal,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: Text(context.tr('suppliers.add_supplier'),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(
+          context.tr('suppliers.add_supplier'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -196,21 +221,26 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.local_shipping_outlined,
-                size: 48, color: AppColors.slate.withAlpha(80)),
+            Icon(
+              Icons.local_shipping_outlined,
+              size: 48,
+              color: AppColors.slate.withAlpha(80),
+            ),
             const SizedBox(height: 16),
-            Text(context.tr('suppliers.no_suppliers'),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontSize: 16)),
+            Text(
+              context.tr('suppliers.no_suppliers'),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontSize: 16),
+            ),
             const SizedBox(height: 8),
-            Text(context.tr('suppliers.no_suppliers_hint'),
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontSize: 13)),
+            Text(
+              context.tr('suppliers.no_suppliers_hint'),
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontSize: 13),
+            ),
           ],
         ),
       ),
