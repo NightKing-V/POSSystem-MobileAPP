@@ -1,0 +1,46 @@
+name: Flutter Multi-Platform CI/CD Development
+
+on:
+  push:
+    branches: ["development"]
+  pull_request:
+    branches: ["development"]
+  workflow_dispatch:
+
+jobs:
+  # Job 1: Builds Web on Ubuntu
+  build-android-web:
+    name: Build & Deploy Web
+    runs-on: ubuntu-latest
+    environment: development
+    defaults:
+      run:
+        working-directory: posapp
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Analyze & Test
+        run: |
+          flutter analyze
+          flutter test
+
+      - name: Build Web Release
+        run: flutter build web --release
+
+      - name: Deploy to Cloudflare Pages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: posapp
+          command: pages deploy build/web --project-name=${{ secrets.PROJECT_NAME || 'kivi-dev' }} --branch=development --commit-dirty=true
