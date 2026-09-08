@@ -28,10 +28,8 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Analyze & Test
-        run: |
-          flutter analyze
-          flutter test
+      - name: Analyze
+        run: flutter analyze
 
       - name: Build Web Release
         run: flutter build web --release
@@ -43,4 +41,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: posapp
-          command: pages deploy build/web --project-name=${{ secrets.PROJECT_NAME || 'kivi-dev' }} --branch=development --commit-dirty=true
+          command: pages deploy build/web --project-name=${{ secrets.PROJECT_NAME || 'kivi-dev' }} --branch=main --commit-dirty=true

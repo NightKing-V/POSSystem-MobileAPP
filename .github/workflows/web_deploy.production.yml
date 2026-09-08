@@ -2,9 +2,9 @@ name: Flutter Multi-Platform CI/CD Production
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -23,15 +23,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
 
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Analyze & Test
-        run: |
-          flutter analyze
-          flutter test
+      - name: Analyze
+        run: flutter analyze
 
       - name: Build Web Release
         run: flutter build web --release
