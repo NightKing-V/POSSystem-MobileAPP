@@ -4,7 +4,9 @@ import '../../../../core/theme/app_theme.dart';
 import './add_product_view.dart';
 
 class ProductsListView extends StatefulWidget {
-  const ProductsListView({super.key});
+  const ProductsListView({super.key, this.isEmbedded = false});
+
+  final bool isEmbedded;
 
   @override
   State<ProductsListView> createState() => _ProductsListViewState();
@@ -22,6 +24,57 @@ class _ProductsListViewState extends State<ProductsListView> {
 
   @override
   Widget build(BuildContext context) {
+    final body = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _search = v),
+                decoration: InputDecoration(
+                  hintText: context.tr('common.search'),
+                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.slate, size: 20),
+                  suffixIcon: _search.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.slate),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _search = '');
+                          },
+                        )
+                      : null,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Expanded(
+              child: _EmptyState(),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isEmbedded) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: body,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AddProductView()),
+          ),
+          backgroundColor: AppColors.inkTeal,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add),
+          label: Text(context.tr('inventory.add_product'), style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -38,40 +91,7 @@ class _ProductsListViewState extends State<ProductsListView> {
         ),
       ),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (v) => setState(() => _search = v),
-                    decoration: InputDecoration(
-                      hintText: context.tr('common.search'),
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.slate, size: 20),
-                      suffixIcon: _search.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.slate),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _search = '');
-                              },
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Expanded(
-                  child: _EmptyState(),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: body,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(

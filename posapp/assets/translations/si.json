@@ -73,6 +73,8 @@
   },
   "dashboard": {
     "title": "පාලක පුවරුව",
+    "home": "මුල් පිටුව",
+    "bill": "බිල්පත",
     "today_sales": "අද දින විකුණුම්",
     "gross_profit": "දළ ලාභය",
     "total_orders": "ඇණවුම්",

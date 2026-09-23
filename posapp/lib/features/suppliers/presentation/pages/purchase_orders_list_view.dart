@@ -6,7 +6,10 @@ import './create_edit_purchase_order_view.dart';
 import './receive_purchase_order_view.dart';
 
 class PurchaseOrdersListView extends StatefulWidget {
-  const PurchaseOrdersListView({super.key});
+  const PurchaseOrdersListView({super.key, this.orgId, this.isEmbedded = false});
+
+  final String? orgId;
+  final bool isEmbedded;
 
   @override
   State<PurchaseOrdersListView> createState() =>
@@ -28,6 +31,73 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
   @override
   Widget build(BuildContext context) {
     final orders = _filtered;
+
+    final body = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700),
+        child: Column(
+          children: [
+            // ── Filter chips ─────────────────────────────────────────
+            _FilterBar(
+              vendorFilter: _vendorFilter,
+              statusFilter: _statusFilter,
+              onVendorChanged: (v) =>
+                  setState(() => _vendorFilter = v),
+              onStatusChanged: (s) =>
+                  setState(() => _statusFilter = s),
+              onClear: () => setState(() {
+                _vendorFilter = null;
+                _statusFilter = null;
+              }),
+            ),
+            Expanded(
+              child: orders.isEmpty
+                  ? const _EmptyState()
+                  : ListView.separated(
+                      padding:
+                          const EdgeInsets.fromLTRB(24, 8, 24, 100),
+                      itemCount: orders.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (_, i) => _PoListTile(
+                        po: orders[i],
+                        onTap: () {
+                          if (orders[i].status ==
+                                  PurchaseOrderStatus.sent ||
+                              orders[i].status ==
+                                  PurchaseOrderStatus.partiallyReceived) {
+                            Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
+                              builder: (_) =>
+                                  ReceivePurchaseOrderView(
+                                      order: orders[i]),
+                            ));
+                          }
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isEmbedded) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: body,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
+            builder: (_) => const CreateEditPurchaseOrderView(),
+          )),
+          backgroundColor: AppColors.inkTeal,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add),
+          label: const Text('Create PO',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -53,55 +123,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
         ),
       ),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: Column(
-              children: [
-                // ── Filter chips ─────────────────────────────────────────
-                _FilterBar(
-                  vendorFilter: _vendorFilter,
-                  statusFilter: _statusFilter,
-                  onVendorChanged: (v) =>
-                      setState(() => _vendorFilter = v),
-                  onStatusChanged: (s) =>
-                      setState(() => _statusFilter = s),
-                  onClear: () => setState(() {
-                    _vendorFilter = null;
-                    _statusFilter = null;
-                  }),
-                ),
-                Expanded(
-                  child: orders.isEmpty
-                      ? const _EmptyState()
-                      : ListView.separated(
-                          padding:
-                              const EdgeInsets.fromLTRB(24, 8, 24, 100),
-                          itemCount: orders.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _PoListTile(
-                            po: orders[i],
-                            onTap: () {
-                              if (orders[i].status ==
-                                      PurchaseOrderStatus.sent ||
-                                  orders[i].status ==
-                                      PurchaseOrderStatus.partiallyReceived) {
-                                Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
-                                  builder: (_) =>
-                                      ReceivePurchaseOrderView(
-                                          order: orders[i]),
-                                ));
-                              }
-                            },
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: body,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 

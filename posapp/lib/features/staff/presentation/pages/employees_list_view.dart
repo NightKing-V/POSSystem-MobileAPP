@@ -5,9 +5,10 @@ import '../../data/staff_repository.dart';
 import './add_edit_employee_view.dart';
 
 class EmployeesListView extends StatefulWidget {
-  const EmployeesListView({super.key, this.orgId});
+  const EmployeesListView({super.key, this.orgId, this.isEmbedded = false});
 
   final String? orgId;
+  final bool isEmbedded;
 
   @override
   State<EmployeesListView> createState() => _EmployeesListViewState();
@@ -61,6 +62,74 @@ class _EmployeesListViewState extends State<EmployeesListView> {
   Widget build(BuildContext context) {
     final employees = _filtered;
 
+    final body = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _search = v),
+                decoration: InputDecoration(
+                  hintText: context.tr('common.search'),
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: AppColors.slate, size: 20),
+                  suffixIcon: _search.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded,
+                              size: 18, color: AppColors.slate),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _search = '');
+                          },
+                        )
+                      : null,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : employees.isEmpty
+                      ? const _EmptySearch()
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                          itemCount: employees.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
+                          itemBuilder: (context, i) => _EmployeeTile(
+                            employee: employees[i],
+                            onTap: () {},
+                          ),
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isEmbedded) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: body,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditEmployeeView()),
+          ),
+          backgroundColor: AppColors.inkTeal,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.person_add_outlined),
+          label: Text(context.tr('staff.add_employee'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -85,56 +154,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
         ),
       ),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              children: [
-                // Search bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (v) => setState(() => _search = v),
-                    decoration: InputDecoration(
-                      hintText: context.tr('common.search'),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: AppColors.slate, size: 20),
-                      suffixIcon: _search.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded,
-                                  size: 18, color: AppColors.slate),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _search = '');
-                              },
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                Expanded(
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : employees.isEmpty
-                          ? const _EmptySearch()
-                          : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                              itemCount: employees.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 10),
-                              itemBuilder: (context, i) => _EmployeeTile(
-                                employee: employees[i],
-                                onTap: () {},
-                              ),
-                            ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: body,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(

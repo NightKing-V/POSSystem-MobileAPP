@@ -73,6 +73,8 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "home": "Home",
+    "bill": "Bill",
     "today_sales": "Today's Sales",
     "gross_profit": "Gross Profit",
     "total_orders": "Orders",

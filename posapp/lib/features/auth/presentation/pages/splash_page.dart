@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/token_storage.dart';
+import '../../../Organisations/presentation/pages/select_business.dart';
 import './login_page.dart';
 
 /// A custom animated splash page for a professional app-launch feel.
@@ -39,19 +41,26 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        // Hold on the complete logo for a brief moment, then fade transition to Login
-        Future.delayed(const Duration(milliseconds: 400), () {
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: const Duration(milliseconds: 600),
-              ),
-            );
-          }
+        // Hold on the complete logo for a brief moment, then route to the appropriate page
+        Future.delayed(const Duration(milliseconds: 400), () async {
+          if (!mounted) return;
+          await TokenStorage.init();
+          final isAuthenticated = TokenStorage.isAuthenticated;
+
+          final Widget targetPage = isAuthenticated
+              ? const SelectBusinessPage()
+              : const LoginPage();
+
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => targetPage,
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 600),
+            ),
+          );
         });
       }
     });
