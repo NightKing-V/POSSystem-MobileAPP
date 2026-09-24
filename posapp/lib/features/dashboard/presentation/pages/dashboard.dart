@@ -89,6 +89,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0:
         return DashboardHomeView(
           businessName: widget.businessName,
+          orgId: widget.orgId,
           onQuickActionTap: (actionLabel) {
             if (actionLabel == 'New Sale') {
               setState(() {
@@ -168,27 +169,29 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final scaffold = Scaffold(
       backgroundColor: AppColors.paper,
-      appBar: AppBar(
-        automaticallyImplyLeading: !isWide,
-        backgroundColor: AppColors.paper,
-        elevation: 0,
-        titleSpacing: 24,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _getAppBarTitle(context),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+      appBar: (isWide && _selectedIndex >= 3)
+          ? null
+          : AppBar(
+              automaticallyImplyLeading: !isWide,
+              backgroundColor: AppColors.paper,
+              elevation: 0,
+              titleSpacing: 24,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getAppBarTitle(context),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+                  ),
+                  Text(
+                    _getAppBarSubtitle(context),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
+              actions: isWide ? null : _buildAppBarActions(),
             ),
-            Text(
-              _getAppBarSubtitle(context),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
-            ),
-          ],
-        ),
-        actions: isWide ? null : _buildAppBarActions(),
-      ),
       drawer: isWide
           ? null
           : Sidebar(

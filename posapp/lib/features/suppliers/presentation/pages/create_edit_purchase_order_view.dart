@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../../Organisations/data/orgs_repository.dart';
 import '../../../inventory/domain/models/product.dart';
+import '../../data/suppliers_repository.dart';
 import '../../domain/models/supplier_mock_data.dart';
 import '../widgets/po_line_item_row.dart';
 import '../widgets/po_product_picker_sheet.dart';
 
 /// Clean screen for creating or editing purchase orders.
 class CreateEditPurchaseOrderView extends StatefulWidget {
-  const CreateEditPurchaseOrderView({super.key, this.vendor, this.order});
+  const CreateEditPurchaseOrderView({
+    super.key,
+    this.vendor,
+    this.order,
+    this.isModal = true,
+  });
 
   final Vendor? vendor;
   final PurchaseOrder? order;
+  final bool isModal;
 
   @override
   State<CreateEditPurchaseOrderView> createState() =>
@@ -28,11 +35,14 @@ class _CreateEditPurchaseOrderViewState
 
   bool get _isEditing => widget.order != null;
 
+  List<Vendor> _vendorsList = [];
+  List<LocationProps> _locationsList = [];
+
   @override
   void initState() {
     super.initState();
     if (widget.vendor != null) _selectedVendorId = widget.vendor!.id;
-    _selectedLocationId = mockLocations.first.id;
+    _loadSuppliersAndLocations();
     if (_isEditing) {
       final o = widget.order!;
       _selectedVendorId = o.vendorId;
@@ -50,6 +60,45 @@ class _CreateEditPurchaseOrderViewState
         );
       }
     }
+  }
+
+  Future<void> _loadSuppliersAndLocations() async {
+    final supRepo = SuppliersRepository();
+    final orgRepo = OrgsRepository();
+
+    final supRes = await supRepo.fetchSuppliers();
+    final orgRes = await orgRepo.fetchOrganizations();
+
+    if (!mounted) return;
+
+    setState(() {
+      if (supRes.isSuccess && supRes.data != null) {
+        _vendorsList = supRes.data!
+            .map((s) => Vendor(
+                  id: s.id,
+                  name: s.name,
+                  contactPerson: s.contactPerson ?? '',
+                  phone: s.phone ?? '',
+                  email: s.email ?? '',
+                  address: s.address ?? '',
+                ))
+            .toList();
+      }
+      if (orgRes.isSuccess && orgRes.data != null) {
+        final List<LocationProps> locs = [];
+        for (final o in orgRes.data!) {
+          if (o.locations.isNotEmpty) {
+            locs.addAll(o.locations);
+          } else {
+            locs.add(LocationProps(id: o.id, name: o.name, type: 'BRANCH'));
+          }
+        }
+        _locationsList = locs;
+        if (_locationsList.isNotEmpty && _selectedLocationId == 'main_branch') {
+          _selectedLocationId = _locationsList.first.id;
+        }
+      }
+    });
   }
 
   @override
@@ -96,80 +145,111 @@ class _CreateEditPurchaseOrderViewState
     if (picked != null) setState(() => _expectedDate = picked);
   }
 
-  void _saveDraft() {
-    Navigator.of(context).pop();
-    _showSnackbar('Purchase order saved as draft.');
-  }
-
-  void _send() {
+  Future<void> _submitPO({required bool isDraft}) async {
+    if (_selectedVendorId == null || _selectedVendorId!.isEmpty) {
+      _showSnackbar('Please select a supplier.', isError: true);
+      return;
+    }
     if (_lines.isEmpty) {
       _showSnackbar('Add at least one line item.', isError: true);
       return;
     }
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+
+    final repo = SuppliersRepository();
+    final dto = CreatePoDto(
+      orgId: 'default_org',
+      supplierId: _selectedVendorId!,
+      locationId: _selectedLocationId,
+      expectedDate: _expectedDate,
+      notes: _noteCtrl.text.trim(),
+      items: _lines
+          .map((l) => {
+                'product_id': l.product.id,
+                'ordered_qty': int.tryParse(l.qtyCtrl.text) ?? 1,
+                'unit_cost': double.tryParse(l.costCtrl.text) ?? l.product.price,
+              })
+          .toList(),
+    );
+
+    final res = await repo.createPurchaseOrder(dto);
+    if (!mounted) return;
+
+    if (!res.isSuccess) {
+      _showSnackbar(res.errorMessage ?? 'Failed to save purchase order.');
+      return;
+    }
+
+    if (isDraft) {
+      Navigator.of(context).pop(true);
+      _showSnackbar('Purchase order saved as draft.');
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Color(0xFF2563EB),
+                  size: 28,
+                ),
               ),
-              child: const Icon(
-                Icons.send_rounded,
-                color: Color(0xFF2563EB),
-                size: 28,
+              const SizedBox(height: 14),
+              Text(
+                'Order Sent!',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontSize: 18),
               ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Order Sent!',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'The purchase order has been sent\nto ${_selectedVendorId != null ? vendorName(_selectedVendorId!) : 'the supplier'}.',
-              textAlign: TextAlign.center,
-              style:
-                  Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
+              const SizedBox(height: 6),
+              const Text(
+                'The purchase order has been successfully created and sent.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppColors.slate),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pop(true);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.inkTeal,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.inkTeal,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Done',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
+
+  void _saveDraft() => _submitPO(isDraft: true);
+  void _send() => _submitPO(isDraft: false);
 
   void _showSnackbar(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -183,7 +263,200 @@ class _CreateEditPurchaseOrderViewState
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final content = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                children: [
+                  // ── Header card (vendor, location, date) ──────────────────
+                  _SectionCard(
+                    title: 'Order details',
+                    children: [
+                      _Label('Vendor *'),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedVendorId,
+                        hint: const Text('Select a vendor'),
+                        decoration: const InputDecoration(),
+                        items: _vendorsList.isEmpty
+                            ? [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('No suppliers available'),
+                                ),
+                              ]
+                            : _vendorsList
+                                .map(
+                                  (v) => DropdownMenuItem(
+                                    value: v.id,
+                                    child: Text(v.name),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (v) => setState(() => _selectedVendorId = v),
+                      ),
+                      const SizedBox(height: 16),
+                      _Label('Delivery Location *'),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedLocationId,
+                        decoration: const InputDecoration(),
+                        items: _locationsList.isEmpty
+                            ? [
+                                const DropdownMenuItem(
+                                  value: 'main_branch',
+                                  child: Text('Main Branch'),
+                                ),
+                              ]
+                            : _locationsList
+                                .map(
+                                  (l) => DropdownMenuItem(
+                                    value: l.id,
+                                    child: Text(l.name),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (v) => setState(() => _selectedLocationId = v),
+                      ),
+                      const SizedBox(height: 16),
+                      _Label('Expected Delivery Date'),
+                      GestureDetector(
+                        onTap: _pickDate,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.hairline,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 16,
+                                color: AppColors.slate,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                '${_expectedDate.day}/${_expectedDate.month}/${_expectedDate.year}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Products / Line items ─────────────────────────────────
+                  _SectionCard(
+                    title: 'Line items',
+                    children: [
+                      if (_lines.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 36,
+                                color: AppColors.slate.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No products added yet',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: AppColors.slate),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _lines.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (_, i) => PoLineItemRow(
+                            line: _lines[i],
+                            onRemove: () => _removeLine(i),
+                            onChanged: () => setState(() {}),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add product'),
+                        onPressed: () => PoProductPickerSheet.show(
+                          context,
+                          onSelect: _addLine,
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.inkTeal,
+                          side: const BorderSide(
+                            color: AppColors.inkTeal,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          minimumSize: const Size(double.infinity, 44),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Order Total summary card ──────────────────────────────
+                  _OrderTotalCard(total: _orderTotal),
+                  const SizedBox(height: 16),
+
+                  // ── Note / Remarks ────────────────────────────────────────
+                  _SectionCard(
+                    title: 'Notes & Instructions',
+                    children: [
+                      TextFormField(
+                        controller: _noteCtrl,
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          hintText: 'Internal note (optional)',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            _ActionBar(
+              onDraft: _saveDraft,
+              onSend: _send,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isModal) {
+      return content;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -196,175 +469,7 @@ class _CreateEditPurchaseOrderViewState
               Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
-              children: [
-                // ── Header card (vendor, location, date) ──────────────────
-                _SectionCard(
-                  title: 'Order details',
-                  children: [
-                    _Label('Vendor *'),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedVendorId,
-                      hint: const Text('Select a vendor'),
-                      decoration: const InputDecoration(),
-                      items: mockVendors
-                          .map(
-                            (v) => DropdownMenuItem(
-                              value: v.id,
-                              child: Text(v.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedVendorId = v),
-                    ),
-                    const SizedBox(height: 16),
-                    _Label('Delivery Location *'),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedLocationId,
-                      decoration: const InputDecoration(),
-                      items: mockLocations
-                          .map(
-                            (l) => DropdownMenuItem(
-                              value: l.id,
-                              child: Text(l.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedLocationId = v),
-                    ),
-                    const SizedBox(height: 16),
-                    _Label('Expected Delivery Date'),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.hairline,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.calendar_today_outlined,
-                              size: 16,
-                              color: AppColors.slate,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '${_expectedDate.day}/${_expectedDate.month}/${_expectedDate.year}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // ── Products / Line items ─────────────────────────────────
-                _SectionCard(
-                  title: 'Line items',
-                  children: [
-                    if (_lines.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        alignment: Alignment.center,
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.shopping_bag_outlined,
-                              size: 36,
-                              color: AppColors.slate.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No products added yet',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppColors.slate),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _lines.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (_, i) => PoLineItemRow(
-                          line: _lines[i],
-                          onRemove: () => _removeLine(i),
-                          onChanged: () => setState(() {}),
-                        ),
-                      ),
-                    const SizedBox(height: 14),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Add product'),
-                      onPressed: () => PoProductPickerSheet.show(
-                        context,
-                        onSelect: _addLine,
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.inkTeal,
-                        side: const BorderSide(
-                          color: AppColors.inkTeal,
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        minimumSize: const Size(double.infinity, 44),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // ── Order Total summary card ──────────────────────────────
-                _OrderTotalCard(total: _orderTotal),
-                const SizedBox(height: 16),
-
-                // ── Note / Remarks ────────────────────────────────────────
-                _SectionCard(
-                  title: 'Notes & Instructions',
-                  children: [
-                    TextFormField(
-                      controller: _noteCtrl,
-                      maxLines: 3,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
-                        hintText: 'Internal note (optional)',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: _ActionBar(
-        onDraft: _saveDraft,
-        onSend: _send,
-      ),
+      body: SafeArea(child: content),
     );
   }
 }

@@ -58,13 +58,13 @@ class _AddProductTabState extends State<AddProductTab> {
     super.dispose();
   }
 
-  void _scanMockBarcode() {
-    final mock =
+  void _generateBarcode() {
+    final code =
         '8901030${(100000 + (DateTime.now().millisecond * 9)).toString().substring(0, 6)}';
-    setState(() => _skuCtrl.text = mock);
+    setState(() => _skuCtrl.text = code);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Mock barcode scanned successfully!'),
+        content: Text('Barcode generated successfully!'),
         duration: Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
       ),
@@ -90,13 +90,7 @@ class _AddProductTabState extends State<AddProductTab> {
       if (res.isSuccess) {
         ApiHelper.showSuccessSnackBar(
             context, '${_nameCtrl.text} added to inventory!');
-        _formKey.currentState!.reset();
-        _nameCtrl.clear();
-        _skuCtrl.clear();
-        _costCtrl.clear();
-        _priceCtrl.clear();
-        _stockCtrl.clear();
-        setState(() => _selectedCategoryId = null);
+        Navigator.of(context).pop(true);
       } else {
         ApiHelper.showErrorSnackBar(
             context, res.errorMessage ?? 'Failed to add product.');
@@ -174,7 +168,7 @@ class _AddProductTabState extends State<AddProductTab> {
                       SizedBox(
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: _scanMockBarcode,
+                          onPressed: _generateBarcode,
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 AppColors.marigold.withValues(alpha: 0.12),

@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/suppliers_repository.dart';
 import '../../domain/models/supplier_mock_data.dart';
 
 class ReceivePurchaseOrderView extends StatefulWidget {
-  const ReceivePurchaseOrderView({super.key, required this.order});
+  const ReceivePurchaseOrderView({
+    super.key,
+    required this.order,
+    this.isModal = true,
+  });
 
   final PurchaseOrder order;
+  final bool isModal;
 
   @override
   State<ReceivePurchaseOrderView> createState() =>
@@ -47,12 +53,14 @@ class _ReceivePurchaseOrderViewState
   bool get _anyReceived =>
       _rows.any((r) => (int.tryParse(r.receivedCtrl.text) ?? 0) > 0);
 
-  void _confirm() {
+  Future<void> _confirm() async {
     final allDone = _allReceived;
+    final newStatus = allDone
+        ? PurchaseOrderStatus.received
+        : PurchaseOrderStatus.partiallyReceived;
+
     setState(() {
-      _status = allDone
-          ? PurchaseOrderStatus.received
-          : PurchaseOrderStatus.partiallyReceived;
+      _status = newStatus;
       widget.order.status = _status;
       for (final r in _rows) {
         r.item.receivedQty =
@@ -60,6 +68,14 @@ class _ReceivePurchaseOrderViewState
         r.item.isMissing = r.isMissing;
       }
     });
+
+    final repo = SuppliersRepository();
+    await repo.updatePurchaseOrderStatus(
+      widget.order.id,
+      allDone ? 'RECEIVED' : 'PARTIALLY_RECEIVED',
+    );
+
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -74,11 +90,95 @@ class _ReceivePurchaseOrderViewState
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final content = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700),
+        child: Column(
+          children: [
+            // ── Info card ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: _InfoCard(
+                order: widget.order,
+                currentStatus: _status,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // ── Column headers ────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+              child: Row(
+                children: [
+                  const Expanded(
+                      child: Text('Product',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: AppColors.slate))),
+                  const SizedBox(
+                    width: 60,
+                    child: Text('Ordered',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: AppColors.slate)),
+                  ),
+                  const SizedBox(
+                    width: 70,
+                    child: Text('Received',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: AppColors.slate)),
+                  ),
+                  const SizedBox(
+                    width: 64,
+                    child: Text('Missing',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: AppColors.slate)),
+                  ),
+                ],
+              ),
+            ),
+            // ── Items list ────────────────────────────────────────────
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                itemCount: _rows.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (_, i) => _ReceiveItemRow(
+                  row: _rows[i],
+                  onChanged: () => setState(() {}),
+                  onMissingToggle: (v) =>
+                      setState(() => _rows[i].isMissing = v),
+                ),
+              ),
+            ),
+            _ConfirmBar(
+              allReceived: _allReceived,
+              anyReceived: _anyReceived,
+              onConfirm: _confirm,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isModal) {
+      return content;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -102,88 +202,7 @@ class _ReceivePurchaseOrderViewState
           ],
         ),
       ),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
-            child: Column(
-              children: [
-                // ── Info card ────────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                  child: _InfoCard(
-                    order: widget.order,
-                    currentStatus: _status,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // ── Column headers ────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                          child: Text('Product',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                  color: AppColors.slate))),
-                      const SizedBox(
-                        width: 60,
-                        child: Text('Ordered',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                                color: AppColors.slate)),
-                      ),
-                      const SizedBox(
-                        width: 70,
-                        child: Text('Received',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                                color: AppColors.slate)),
-                      ),
-                      const SizedBox(
-                        width: 64,
-                        child: Text('Missing',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                                color: AppColors.slate)),
-                      ),
-                    ],
-                  ),
-                ),
-                // ── Items list ────────────────────────────────────────────
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    itemCount: _rows.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (_, i) => _ReceiveItemRow(
-                      row: _rows[i],
-                      onChanged: () => setState(() {}),
-                      onMissingToggle: (v) =>
-                          setState(() => _rows[i].isMissing = v),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: _ConfirmBar(
-        allReceived: _allReceived,
-        anyReceived: _anyReceived,
-        onConfirm: _confirm,
-      ),
+      body: SafeArea(child: content),
     );
   }
 }

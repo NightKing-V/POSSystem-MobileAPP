@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_modal.dart';
+import '../../../../core/widgets/management_grid_table.dart';
+import '../../../../core/widgets/management_header.dart';
 import '../../data/staff_repository.dart';
 import './add_edit_employee_view.dart';
 
@@ -21,6 +24,9 @@ class _EmployeesListViewState extends State<EmployeesListView> {
   List<StaffUserProps> _employees = [];
   bool _isLoading = false;
 
+  int? _sortColumnIndex = 0;
+  bool _sortAscending = true;
+
   @override
   void initState() {
     super.initState();
@@ -39,17 +45,44 @@ class _EmployeesListViewState extends State<EmployeesListView> {
     });
   }
 
-  List<StaffUserProps> get _filtered {
-    if (_search.isEmpty) return _employees;
-    final q = _search.toLowerCase();
-    return _employees
-        .where((e) =>
-            e.name.toLowerCase().contains(q) ||
-            e.email.toLowerCase().contains(q) ||
-            (e.phone != null && e.phone!.contains(q)) ||
-            (e.role != null && e.role!.toLowerCase().contains(q)) ||
-            (e.locationName != null && e.locationName!.toLowerCase().contains(q)))
-        .toList();
+  List<StaffUserProps> get _processedEmployees {
+    var list = _employees;
+    if (_search.isNotEmpty) {
+      final q = _search.toLowerCase();
+      list = list
+          .where((e) =>
+              e.name.toLowerCase().contains(q) ||
+              e.email.toLowerCase().contains(q) ||
+              (e.phone != null && e.phone!.contains(q)) ||
+              (e.role != null && e.role!.toLowerCase().contains(q)) ||
+              (e.locationName != null &&
+                  e.locationName!.toLowerCase().contains(q)))
+          .toList();
+    }
+
+    if (_sortColumnIndex != null) {
+      list = List.of(list);
+      list.sort((a, b) {
+        int comp = 0;
+        switch (_sortColumnIndex) {
+          case 0:
+            comp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            break;
+          case 1:
+            comp = (a.role ?? '').toLowerCase().compareTo((b.role ?? '').toLowerCase());
+            break;
+          case 2:
+            comp = (a.locationName ?? '').toLowerCase().compareTo((b.locationName ?? '').toLowerCase());
+            break;
+          case 3:
+            comp = (a.isActive ? 1 : 0).compareTo(b.isActive ? 1 : 0);
+            break;
+        }
+        return _sortAscending ? comp : -comp;
+      });
+    }
+
+    return list;
   }
 
   @override
@@ -58,75 +91,217 @@ class _EmployeesListViewState extends State<EmployeesListView> {
     super.dispose();
   }
 
+  void _openAddEdit([StaffUserProps? employee]) async {
+    final isEditing = employee != null;
+    final res = await showResponsiveModal<bool>(
+      context: context,
+      title: isEditing ? 'Edit Staff Member' : context.tr('staff.add_employee'),
+      subtitle: isEditing
+          ? employee.email
+          : 'Add staff account & set role permissions',
+      leadingIcon: const Icon(Icons.badge_outlined,
+          color: AppColors.inkTeal, size: 20),
+      maxWidth: 620,
+      builder: (_) => AddEditEmployeeView(
+        employee: employee,
+        orgId: widget.orgId,
+        isModal: true,
+      ),
+    );
+    if (res == true) {
+      _loadStaff();
+    }
+  }
+
+  void _handleDelete(StaffUserProps employee) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Staff Member'),
+        content: Text('Are you sure you want to remove "${employee.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      setState(() {
+        _employees.removeWhere((e) => e.id == employee.id);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Staff member "${employee.name}" removed.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final employees = _filtered;
+    final employees = _processedEmployees;
 
-    final body = Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: Column(
-          children: [
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _search = v),
-                decoration: InputDecoration(
-                  hintText: context.tr('common.search'),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: AppColors.slate, size: 20),
-                  suffixIcon: _search.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded,
-                              size: 18, color: AppColors.slate),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _search = '');
-                          },
-                        )
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : employees.isEmpty
-                      ? const _EmptySearch()
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                          itemCount: employees.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 10),
-                          itemBuilder: (context, i) => _EmployeeTile(
-                            employee: employees[i],
-                            onTap: () {},
+    final body = Column(
+      children: [
+        ManagementHeaderBar(
+          title: context.tr('staff.title'),
+          subtitle: 'Staff Directory & Access Management',
+          itemCountText:
+              '${employees.length} ${employees.length == 1 ? 'member' : 'members'}',
+          searchCtrl: _searchCtrl,
+          searchHint: context.tr('common.search'),
+          onSearchChanged: (v) => setState(() => _search = v),
+          actionLabel: context.tr('staff.add_employee'),
+          actionIcon: Icons.person_add_outlined,
+          onActionTap: () => _openAddEdit(),
+        ),
+        Expanded(
+          child: ManagementGridTable<StaffUserProps>(
+            items: employees,
+            isLoading: _isLoading,
+            emptyTitle: 'No staff found',
+            emptySubtitle: 'Try adjusting your search terms.',
+            emptyIcon: Icons.person_search_outlined,
+            enablePagination: true,
+            rowsPerPage: 10,
+            sortColumnIndex: _sortColumnIndex,
+            sortAscending: _sortAscending,
+            onSort: (colIdx, asc) {
+              setState(() {
+                _sortColumnIndex = colIdx;
+                _sortAscending = asc;
+              });
+            },
+            onEdit: (e) => _openAddEdit(e),
+            onDelete: (e) => _handleDelete(e),
+            columns: [
+              ManagementTableColumn<StaffUserProps>(
+                label: 'Staff Member',
+                flex: 3,
+                isSortable: true,
+                cellBuilder: (emp, _) {
+                  final initials = emp.name
+                      .split(' ')
+                      .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
+                      .take(2)
+                      .join();
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 17,
+                        backgroundColor:
+                            AppColors.inkTeal.withValues(alpha: 0.1),
+                        child: Text(
+                          initials.isNotEmpty ? initials : 'S',
+                          style: const TextStyle(
+                            color: AppColors.inkTeal,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              emp.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            Text(
+                              emp.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.slate,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              ManagementTableColumn<StaffUserProps>(
+                label: 'Role / Designation',
+                flex: 2,
+                isSortable: true,
+                cellBuilder: (emp, _) => Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.inkTeal.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      emp.role ?? 'Employee',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.inkTeal,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              ManagementTableColumn<StaffUserProps>(
+                label: 'Assigned Branch',
+                flex: 2,
+                isSortable: true,
+                cellBuilder: (emp, _) => Text(
+                  emp.locationName ?? 'All Locations',
+                  style: const TextStyle(fontSize: 13, color: AppColors.slate),
+                ),
+              ),
+              ManagementTableColumn<StaffUserProps>(
+                label: 'Status',
+                width: 110,
+                isSortable: true,
+                cellBuilder: (emp, _) => _StatusDot(active: emp.isActive),
+              ),
+            ],
+            cardBuilder: (context, emp, _) => _EmployeeTile(
+              employee: emp,
+              onTap: () => _openAddEdit(emp),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
+    );
+
+    final fab = ManagementHeaderBar.buildFab(
+      context,
+      label: context.tr('staff.add_employee'),
+      icon: Icons.person_add_outlined,
+      onTap: () => _openAddEdit(),
     );
 
     if (widget.isEmbedded) {
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: body,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditEmployeeView()),
-          ),
-          backgroundColor: AppColors.inkTeal,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.person_add_outlined),
-          label: Text(context.tr('staff.add_employee'),
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-        ),
+        floatingActionButton: fab,
       );
     }
 
@@ -153,19 +328,8 @@ class _EmployeesListViewState extends State<EmployeesListView> {
           ],
         ),
       ),
-      body: SafeArea(
-        child: body,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const AddEditEmployeeView()),
-        ),
-        backgroundColor: AppColors.inkTeal,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add_outlined),
-        label: Text(context.tr('staff.add_employee'),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      body: SafeArea(child: body),
+      floatingActionButton: fab,
     );
   }
 }
@@ -184,70 +348,88 @@ class _EmployeeTile extends StatelessWidget {
         .take(2)
         .join();
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: AppColors.hairline.withValues(alpha: 0.7),
+          width: 1.2,
         ),
-        child: Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
-              child: Text(
-                initials.isNotEmpty ? initials : 'S',
-                style: const TextStyle(
-                    color: AppColors.inkTeal,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.inkTeal.withValues(alpha: 0.1),
+                child: Text(
+                  initials.isNotEmpty ? initials : 'S',
+                  style: const TextStyle(
+                      color: AppColors.inkTeal,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(employee.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: AppColors.ink)),
-                      const Spacer(),
-                      _StatusDot(active: employee.isActive),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(employee.role ?? 'Employee',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.inkTeal,
-                              fontWeight: FontWeight.w600)),
-                      if (employee.locationName != null) ...[
-                        const Text(' · ',
-                            style: TextStyle(
-                                fontSize: 12, color: AppColors.slate)),
-                        Text(employee.locationName!,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            employee.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                                fontSize: 12, color: AppColors.slate)),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                color: AppColors.ink),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        _StatusDot(active: employee.isActive),
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Text(employee.role ?? 'Employee',
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.inkTeal,
+                                fontWeight: FontWeight.w600)),
+                        if (employee.locationName != null) ...[
+                          const Text(' · ',
+                              style: TextStyle(
+                                  fontSize: 11.5, color: AppColors.slate)),
+                          Expanded(
+                            child: Text(
+                              employee.locationName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 11.5, color: AppColors.slate),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppColors.slate, size: 18),
-          ],
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right, color: AppColors.slate, size: 18),
+            ],
+          ),
         ),
       ),
     );
@@ -261,66 +443,34 @@ class _StatusDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: active
             ? const Color(0xFF0F9D58).withValues(alpha: 0.1)
             : AppColors.slate.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 5,
+            height: 5,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: active ? const Color(0xFF0F9D58) : AppColors.slate,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
           Text(
             active ? 'Active' : 'Inactive',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10.5,
               fontWeight: FontWeight.w600,
               color: active ? const Color(0xFF0F9D58) : AppColors.slate,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmptySearch extends StatelessWidget {
-  const _EmptySearch();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search_outlined,
-                size: 48, color: AppColors.slate.withAlpha(80)),
-            const SizedBox(height: 16),
-            Text('No staff found',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontSize: 16)),
-            const SizedBox(height: 8),
-            Text('Try adjusting your search terms.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontSize: 13)),
-          ],
-        ),
       ),
     );
   }

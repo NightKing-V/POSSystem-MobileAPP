@@ -11,11 +11,13 @@ class AddEditSupplierView extends StatefulWidget {
     this.supplier,
     this.vendor,
     this.orgId,
+    this.isModal = true,
   });
 
   final SupplierProps? supplier;
   final Vendor? vendor;
   final String? orgId;
+  final bool isModal;
 
   @override
   State<AddEditSupplierView> createState() => _AddEditSupplierViewState();
@@ -109,6 +111,156 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
 
   @override
   Widget build(BuildContext context) {
+    final formBody = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Supplier Details',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            _FieldLabel('${context.tr('suppliers.supplier_name')} *'),
+            TextFormField(
+              controller: _nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'e.g. Lanka Fresh Distributors',
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Supplier name is required'
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            _FieldLabel(context.tr('suppliers.contact_person')),
+            TextFormField(
+              controller: _contactCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'e.g. Bandara Silva',
+              ),
+            ),
+            const SizedBox(height: 16),
+            _FieldLabel('Phone Number'),
+            TextFormField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                hintText: '+94 11 234 5678',
+              ),
+            ),
+            const SizedBox(height: 16),
+            _FieldLabel('Email Address'),
+            TextFormField(
+              controller: _emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                hintText: 'orders@supplier.lk',
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Divider(color: AppColors.hairline, height: 1),
+            const SizedBox(height: 20),
+            Text(
+              'Address & Notes',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            _FieldLabel('Physical Address'),
+            TextFormField(
+              controller: _addressCtrl,
+              decoration: const InputDecoration(
+                hintText: 'e.g. 100 Main Street, Pettah',
+              ),
+            ),
+            const SizedBox(height: 16),
+            _FieldLabel('Notes'),
+            TextFormField(
+              controller: _notesCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Payment terms, delivery schedules…',
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.slate,
+                      side: const BorderSide(
+                        color: AppColors.hairline,
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(0, 52),
+                    ),
+                    child: Text(context.tr('common.cancel')),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.inkTeal,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(0, 52),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            _isEditing
+                                ? 'Update Supplier'
+                                : context.tr('common.save'),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isModal) {
+      return formBody;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -117,191 +269,10 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
         titleSpacing: 16,
         title: Text(
           _isEditing ? 'Edit Supplier' : context.tr('suppliers.add_supplier'),
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontSize: 17),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _FormCard(
-                      title: 'Supplier Details',
-                      children: [
-                        _FieldLabel(
-                          '${context.tr('suppliers.supplier_name')} *',
-                        ),
-                        TextFormField(
-                          controller: _nameCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. Lanka Fresh Distributors',
-                          ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Supplier name is required'
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        _FieldLabel(context.tr('suppliers.contact_person')),
-                        TextFormField(
-                          controller: _contactCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. Bandara Silva',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _FieldLabel('Phone Number'),
-                        TextFormField(
-                          controller: _phoneCtrl,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            hintText: '+94 11 234 5678',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _FieldLabel('Email Address'),
-                        TextFormField(
-                          controller: _emailCtrl,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            hintText: 'orders@supplier.lk',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _FormCard(
-                      title: 'Address & Notes',
-                      children: [
-                        _FieldLabel('Physical Address'),
-                        TextFormField(
-                          controller: _addressCtrl,
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. 100 Main Street, Pettah',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _FieldLabel('Notes'),
-                        TextFormField(
-                          controller: _notesCtrl,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            hintText: 'Payment terms, delivery schedules…',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.slate,
-                              side: const BorderSide(
-                                color: AppColors.hairline,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              minimumSize: const Size(0, 52),
-                            ),
-                            child: Text(context.tr('common.cancel')),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _save,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.inkTeal,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              minimumSize: const Size(0, 52),
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : Text(
-                                    _isEditing
-                                        ? 'Update Supplier'
-                                        : context.tr('common.save'),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FormCard extends StatelessWidget {
-  const _FormCard({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.hairline.withValues(alpha: 0.6),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontSize: 15),
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
+      body: SafeArea(child: formBody),
     );
   }
 }

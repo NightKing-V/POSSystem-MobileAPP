@@ -52,47 +52,63 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
   }
 
   Future<void> _refresh() async {
-    final cats = await CategoryRepository.instance.getAll();
+    final res = await _inventoryRepo.fetchCategories();
     if (!mounted) return;
-    setState(() {
-      _categories = cats;
-      _loading = false;
-    });
+    if (res.isSuccess && res.data != null) {
+      setState(() {
+        _categories = res.data!
+            .map((c) => Category(
+                  id: c.id,
+                  name: c.name,
+                  colorIndex: (c.name.hashCode % AddCategoryTab.swatchColors.length).abs(),
+                ))
+            .toList();
+        _loading = false;
+      });
+    } else {
+      setState(() => _loading = false);
+    }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final catName = _nameCtrl.text.trim();
 
-    // Call backend API
-    _inventoryRepo.createCategory(CreateCategoryDto(name: catName));
-
-    await CategoryRepository.instance.add(
-      name: catName,
-      colorIndex: _selectedSwatch,
-    );
-    _formKey.currentState!.reset();
-    _nameCtrl.clear();
-    setState(() => _selectedSwatch = 0);
-    widget.onCategoryAdded();
-    await _refresh();
+    final res = await _inventoryRepo.createCategory(CreateCategoryDto(name: catName));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(children: [
-          Icon(Icons.check_circle_outline, color: Colors.white),
-          SizedBox(width: 8),
-          Text('Category created!'),
-        ]),
-        backgroundColor: AppColors.inkTeal,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+
+    if (res.isSuccess) {
+      _formKey.currentState!.reset();
+      _nameCtrl.clear();
+      setState(() => _selectedSwatch = 0);
+      widget.onCategoryAdded();
+      await _refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(children: [
+            Icon(Icons.check_circle_outline, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Category created!'),
+          ]),
+          backgroundColor: AppColors.inkTeal,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.errorMessage ?? 'Failed to create category.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _delete(String id) async {
-    await CategoryRepository.instance.delete(id);
+    await _inventoryRepo.deleteCategory(id);
     widget.onCategoryAdded();
     await _refresh();
   }
@@ -132,7 +148,7 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
                           if (v == null || v.trim().isEmpty) {
                             return 'Please enter category name';
                           }
-                          if (CategoryRepository.instance.nameExists(v)) {
+                          if (_categories.any((c) => c.name.toLowerCase() == v.trim().toLowerCase())) {
                             return 'A category with this name already exists';
                           }
                           return null;

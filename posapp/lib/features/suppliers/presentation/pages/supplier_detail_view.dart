@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_modal.dart';
+import '../../data/suppliers_repository.dart';
 import '../../domain/models/supplier_mock_data.dart';
+import '../../../inventory/data/inventory_repository.dart';
 import '../../../inventory/domain/models/product.dart';
 import '../../../dashboard/presentation/widgets/status_badge.dart';
 import './add_edit_supplier_view.dart';
@@ -21,12 +24,65 @@ class _SupplierDetailViewState extends State<SupplierDetailView>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   late bool _isActive;
+  List<PurchaseOrder> _orders = [];
+  final List<VendorProductLink> _links = [];
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
     _isActive = widget.vendor.isActive;
+    _loadOrders();
+  }
+
+  PurchaseOrderStatus _mapStatus(String status) {
+    switch (status.toUpperCase()) {
+      case 'SENT':
+        return PurchaseOrderStatus.sent;
+      case 'PARTIALLY_RECEIVED':
+      case 'PARTIAL':
+        return PurchaseOrderStatus.partiallyReceived;
+      case 'RECEIVED':
+        return PurchaseOrderStatus.received;
+      case 'CANCELLED':
+        return PurchaseOrderStatus.cancelled;
+      default:
+        return PurchaseOrderStatus.draft;
+    }
+  }
+
+  Future<void> _loadOrders() async {
+    final repo = SuppliersRepository();
+    final res = await repo.fetchPurchaseOrders(supplierId: widget.vendor.id);
+    if (res.isSuccess && res.data != null && mounted) {
+      setState(() {
+        _orders = res.data!
+            .where((o) => o.supplierId == widget.vendor.id)
+            .map((po) => PurchaseOrder(
+                  id: po.id,
+                  vendorId: po.supplierId,
+                  locationId: 'main_branch',
+                  status: _mapStatus(po.status),
+                  expectedDate: po.expectedDate,
+                  note: po.notes,
+                  items: po.items
+                      .map((it) => PurchaseOrderItem(
+                            product: Product(
+                              id: it.productId,
+                              name: it.productName,
+                              price: it.unitCost,
+                              sku: '',
+                              category: 'General',
+                            ),
+                            orderedQty: it.orderedQty,
+                            unitCost: it.unitCost,
+                            receivedQty: it.receivedQty,
+                          ))
+                      .toList(),
+                ))
+            .toList();
+      });
+    }
   }
 
   @override
@@ -34,12 +90,6 @@ class _SupplierDetailViewState extends State<SupplierDetailView>
     _tabs.dispose();
     super.dispose();
   }
-
-  List<VendorProductLink> get _links =>
-      mockVendorLinks.where((l) => l.vendorId == widget.vendor.id).toList();
-
-  List<PurchaseOrder> get _orders =>
-      mockPurchaseOrders.where((o) => o.vendorId == widget.vendor.id).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +107,14 @@ class _SupplierDetailViewState extends State<SupplierDetailView>
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: AppColors.inkTeal),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
-                builder: (_) =>
-                    AddEditSupplierView(vendor: widget.vendor))),
+            onPressed: () => showResponsiveModal<bool>(
+              context: context,
+              title: 'Edit Supplier',
+              subtitle: widget.vendor.name,
+              leadingIcon: const Icon(Icons.business_outlined, color: AppColors.inkTeal, size: 20),
+              maxWidth: 580,
+              builder: (_) => AddEditSupplierView(vendor: widget.vendor, isModal: true),
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -229,7 +284,7 @@ class _ContactRow extends StatelessWidget {
 
 // ─── Linked products tab ──────────────────────────────────────────────────────
 
-class _LinkedProductsTab extends StatelessWidget {
+class _LinkedProductsTab extends StatefulWidget {
   const _LinkedProductsTab({
     required this.links,
     required this.vendorId,
@@ -240,8 +295,29 @@ class _LinkedProductsTab extends StatelessWidget {
   final String vendorId;
   final VoidCallback onLinkAdded;
 
+  @override
+  State<_LinkedProductsTab> createState() => _LinkedProductsTabState();
+}
+
+class _LinkedProductsTabState extends State<_LinkedProductsTab> {
+  List<Product> _products = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    final repo = InventoryRepository();
+    final res = await repo.fetchProducts();
+    if (res.isSuccess && res.data != null && mounted) {
+      setState(() => _products = res.data!);
+    }
+  }
+
   Product? _product(String id) =>
-      Product.mockProducts.cast<Product?>().firstWhere(
+      _products.cast<Product?>().firstWhere(
           (p) => p?.id == id, orElse: () => null);
 
   @override
@@ -249,7 +325,7 @@ class _LinkedProductsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
-        if (links.isEmpty)
+        if (widget.links.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 32),
             child: Center(
@@ -260,7 +336,7 @@ class _LinkedProductsTab extends StatelessWidget {
                       ?.copyWith(fontSize: 13)),
             ),
           ),
-        ...links.map((link) {
+        ...widget.links.map((link) {
           final product = _product(link.productId);
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -271,14 +347,13 @@ class _LinkedProductsTab extends StatelessWidget {
         OutlinedButton.icon(
           icon: const Icon(Icons.link, size: 16),
           label: const Text('Link a product'),
-          onPressed: () => showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => LinkProductVendorView(
-              vendorId: vendorId,
-              onLinked: onLinkAdded,
-            ),
+          onPressed: () => LinkProductVendorView.show(
+            context,
+            vendorId: widget.vendorId,
+            onLinked: () {
+              _loadProducts();
+              widget.onLinkAdded();
+            },
           ),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.inkTeal,
@@ -337,7 +412,7 @@ class _LinkedProductTile extends StatelessWidget {
 
 // ─── Purchase orders tab ──────────────────────────────────────────────────────
 
-class _PurchaseOrdersTab extends StatelessWidget {
+class _PurchaseOrdersTab extends StatefulWidget {
   const _PurchaseOrdersTab(
       {required this.orders, required this.vendor});
 
@@ -345,11 +420,59 @@ class _PurchaseOrdersTab extends StatelessWidget {
   final Vendor vendor;
 
   @override
+  State<_PurchaseOrdersTab> createState() => _PurchaseOrdersTabState();
+}
+
+class _PurchaseOrdersTabState extends State<_PurchaseOrdersTab> {
+  List<PurchaseOrderProps> _liveOrders = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() => _isLoading = true);
+    final repo = SuppliersRepository();
+    final res = await repo.fetchPurchaseOrders(supplierId: widget.vendor.id);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (res.isSuccess && res.data != null) {
+        _liveOrders = res.data!;
+      }
+    });
+  }
+
+  PurchaseOrderStatus _mapStatus(String statusStr) {
+    switch (statusStr.toUpperCase()) {
+      case 'SENT':
+        return PurchaseOrderStatus.sent;
+      case 'PARTIAL':
+      case 'PARTIALLY_RECEIVED':
+        return PurchaseOrderStatus.partiallyReceived;
+      case 'RECEIVED':
+        return PurchaseOrderStatus.received;
+      case 'CANCELLED':
+        return PurchaseOrderStatus.cancelled;
+      default:
+        return PurchaseOrderStatus.draft;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
-        if (orders.isEmpty)
+        if (_isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_liveOrders.isEmpty && widget.orders.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 32),
             child: Center(
@@ -360,17 +483,48 @@ class _PurchaseOrdersTab extends StatelessWidget {
                       ?.copyWith(fontSize: 13)),
             ),
           ),
-        ...orders.map((po) => Padding(
+        ..._liveOrders.map((po) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _PoHistoryTile(po: po),
+              child: _PoHistoryTile(
+                po: PurchaseOrder(
+                  id: po.id,
+                  vendorId: po.supplierId,
+                  locationId: 'main_branch',
+                  status: _mapStatus(po.status),
+                  expectedDate: po.expectedDate,
+                  note: po.notes,
+                  items: po.items
+                      .map((it) => PurchaseOrderItem(
+                            product: Product(
+                              id: it.productId,
+                              name: it.productName,
+                              price: it.unitCost,
+                              sku: '',
+                              category: 'General',
+                            ),
+                            orderedQty: it.orderedQty,
+                            unitCost: it.unitCost,
+                          ))
+                      .toList(),
+                ),
+                onUpdated: _loadOrders,
+              ),
             )),
         const SizedBox(height: 12),
         ElevatedButton.icon(
           icon: const Icon(Icons.add, size: 16),
           label: const Text('New Purchase Order'),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
-            builder: (_) => CreateEditPurchaseOrderView(vendor: vendor),
-          )),
+          onPressed: () async {
+            final res = await showResponsiveModal<bool>(
+              context: context,
+              title: 'New Purchase Order',
+              subtitle: widget.vendor.name,
+              leadingIcon: const Icon(Icons.receipt_long_rounded, color: AppColors.inkTeal, size: 20),
+              maxWidth: 680,
+              builder: (_) => CreateEditPurchaseOrderView(vendor: widget.vendor, isModal: true),
+            );
+            if (res == true) _loadOrders();
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.inkTeal,
             foregroundColor: Colors.white,
@@ -386,18 +540,27 @@ class _PurchaseOrdersTab extends StatelessWidget {
 }
 
 class _PoHistoryTile extends StatelessWidget {
-  const _PoHistoryTile({required this.po});
+  const _PoHistoryTile({required this.po, this.onUpdated});
 
   final PurchaseOrder po;
+  final VoidCallback? onUpdated;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: po.status == PurchaseOrderStatus.sent ||
               po.status == PurchaseOrderStatus.partiallyReceived
-          ? () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, 
-                builder: (_) => ReceivePurchaseOrderView(order: po),
-              ))
+          ? () async {
+              final res = await showResponsiveModal<bool>(
+                context: context,
+                title: 'Receive Goods',
+                subtitle: po.id,
+                leadingIcon: const Icon(Icons.inventory_2_outlined, color: AppColors.inkTeal, size: 20),
+                maxWidth: 680,
+                builder: (_) => ReceivePurchaseOrderView(order: po, isModal: true),
+              );
+              if (res == true) onUpdated?.call();
+            }
           : null,
       child: Container(
         padding: const EdgeInsets.all(14),

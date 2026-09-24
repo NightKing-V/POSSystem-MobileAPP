@@ -11,7 +11,9 @@
             "type": "dart",
             "args": [
                 "--web-port",
-                "8090"
+                "8090",
+                "--dart-define-from-file",
+                ".env.development"
             ]
         },
         {
@@ -22,7 +24,9 @@
             "flutterMode": "profile",
             "args": [
                 "--web-port",
-                "8090"
+                "8090",
+                "--dart-define-from-file",
+                ".env.development"
             ]
         },
         {
@@ -33,7 +37,9 @@
             "flutterMode": "release",
             "args": [
                 "--web-port",
-                "8090"
+                "8090",
+                "--dart-define-from-file",
+                ".env.development"
             ]
         }
     ]

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_modal.dart';
+import '../../../../core/widgets/management_grid_table.dart';
+import '../../../../core/widgets/management_header.dart';
 import '../../data/suppliers_repository.dart';
 import './add_edit_supplier_view.dart';
 
@@ -21,6 +24,9 @@ class _SuppliersListViewState extends State<SuppliersListView> {
   List<SupplierProps> _suppliers = [];
   bool _isLoading = false;
 
+  int? _sortColumnIndex = 0;
+  bool _sortAscending = true;
+
   @override
   void initState() {
     super.initState();
@@ -39,19 +45,42 @@ class _SuppliersListViewState extends State<SuppliersListView> {
     });
   }
 
-  List<SupplierProps> get _filtered {
-    if (_search.isEmpty) return _suppliers;
-    final q = _search.toLowerCase();
-    return _suppliers
-        .where(
-          (v) =>
-              v.name.toLowerCase().contains(q) ||
-              (v.contactPerson != null &&
-                  v.contactPerson!.toLowerCase().contains(q)) ||
-              (v.phone != null && v.phone!.contains(q)) ||
-              (v.email != null && v.email!.toLowerCase().contains(q)),
-        )
-        .toList();
+  List<SupplierProps> get _processedSuppliers {
+    var list = _suppliers;
+    if (_search.isNotEmpty) {
+      final q = _search.toLowerCase();
+      list = list
+          .where(
+            (v) =>
+                v.name.toLowerCase().contains(q) ||
+                (v.contactPerson != null &&
+                    v.contactPerson!.toLowerCase().contains(q)) ||
+                (v.phone != null && v.phone!.contains(q)) ||
+                (v.email != null && v.email!.toLowerCase().contains(q)),
+          )
+          .toList();
+    }
+
+    if (_sortColumnIndex != null) {
+      list = List.of(list);
+      list.sort((a, b) {
+        int comp = 0;
+        switch (_sortColumnIndex) {
+          case 0:
+            comp = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            break;
+          case 1:
+            comp = (a.contactPerson ?? '').toLowerCase().compareTo((b.contactPerson ?? '').toLowerCase());
+            break;
+          case 2:
+            comp = (a.phone ?? '').compareTo(b.phone ?? '');
+            break;
+        }
+        return _sortAscending ? comp : -comp;
+      });
+    }
+
+    return list;
   }
 
   @override
@@ -60,131 +89,237 @@ class _SuppliersListViewState extends State<SuppliersListView> {
     super.dispose();
   }
 
+  void _openAddSupplier([SupplierProps? supplier]) async {
+    final isEditing = supplier != null;
+    final res = await showResponsiveModal<bool>(
+      context: context,
+      title: isEditing ? 'Edit Supplier' : context.tr('suppliers.add_supplier'),
+      subtitle: isEditing
+          ? supplier.name
+          : 'Register a new vendor or stock supplier',
+      leadingIcon: const Icon(Icons.local_shipping_outlined,
+          color: AppColors.inkTeal, size: 20),
+      maxWidth: 640,
+      builder: (_) => AddEditSupplierView(
+        supplier: supplier,
+        orgId: widget.orgId,
+        isModal: true,
+      ),
+    );
+    if (res == true) {
+      _loadSuppliers();
+    }
+  }
+
+  void _handleDelete(SupplierProps supplier) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Supplier'),
+        content: Text('Are you sure you want to remove "${supplier.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      setState(() {
+        _suppliers.removeWhere((s) => s.id == supplier.id);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Supplier "${supplier.name}" removed.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final list = _filtered;
+    final list = _processedSuppliers;
 
-    final body = Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 700),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _search = v),
-                decoration: InputDecoration(
-                  hintText: context.tr('common.search'),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: AppColors.slate,
-                    size: 20,
+    final body = Column(
+      children: [
+        ManagementHeaderBar(
+          title: context.tr('suppliers.title'),
+          subtitle: 'Vendor & Supplier Directory',
+          itemCountText:
+              '${list.length} ${list.length == 1 ? 'supplier' : 'suppliers'}',
+          searchCtrl: _searchCtrl,
+          searchHint: context.tr('common.search'),
+          onSearchChanged: (v) => setState(() => _search = v),
+          actionLabel: context.tr('suppliers.add_supplier'),
+          actionIcon: Icons.add,
+          onActionTap: () => _openAddSupplier(),
+        ),
+        Expanded(
+          child: ManagementGridTable<SupplierProps>(
+            items: list,
+            isLoading: _isLoading,
+            emptyTitle: context.tr('suppliers.no_suppliers'),
+            emptySubtitle: context.tr('suppliers.no_suppliers_hint'),
+            emptyIcon: Icons.local_shipping_outlined,
+            enablePagination: true,
+            rowsPerPage: 10,
+            sortColumnIndex: _sortColumnIndex,
+            sortAscending: _sortAscending,
+            onSort: (colIdx, asc) {
+              setState(() {
+                _sortColumnIndex = colIdx;
+                _sortAscending = asc;
+              });
+            },
+            onEdit: (s) => _openAddSupplier(s),
+            onDelete: (s) => _handleDelete(s),
+            columns: [
+              ManagementTableColumn<SupplierProps>(
+                label: 'Supplier / Vendor',
+                flex: 3,
+                isSortable: true,
+                cellBuilder: (s, _) => Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 17,
+                      backgroundColor:
+                          AppColors.inkTeal.withValues(alpha: 0.1),
+                      child: Text(
+                        s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
+                        style: const TextStyle(
+                          color: AppColors.inkTeal,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        s.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ManagementTableColumn<SupplierProps>(
+                label: 'Contact Person',
+                flex: 2,
+                isSortable: true,
+                cellBuilder: (s, _) => Text(
+                  s.contactPerson ?? '—',
+                  style: const TextStyle(fontSize: 13, color: AppColors.ink),
+                ),
+              ),
+              ManagementTableColumn<SupplierProps>(
+                label: 'Phone & Email',
+                flex: 3,
+                cellBuilder: (s, _) => Text(
+                  s.phone ?? s.email ?? '—',
+                  style: const TextStyle(fontSize: 12.5, color: AppColors.slate),
+                ),
+              ),
+            ],
+            cardBuilder: (_, s, __) => InkWell(
+              onTap: () => _openAddSupplier(s),
+              borderRadius: BorderRadius.circular(12),
+              child: Card(
+                margin: EdgeInsets.zero,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: AppColors.hairline.withValues(alpha: 0.7),
+                    width: 1.2,
                   ),
-                  suffixIcon: _search.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(
-                            Icons.clear_rounded,
-                            size: 18,
-                            color: AppColors.slate,
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor:
+                            AppColors.inkTeal.withValues(alpha: 0.1),
+                        child: Text(
+                          s.name.isNotEmpty ? s.name[0].toUpperCase() : 'S',
+                          style: const TextStyle(
+                            color: AppColors.inkTeal,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _search = '');
-                          },
-                        )
-                      : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              s.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              s.contactPerson ?? s.phone ?? s.email ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.slate,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined,
+                            size: 18, color: AppColors.slate),
+                        onPressed: () => _openAddSupplier(s),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : list.isEmpty
-                  ? const _EmptyState()
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                      itemCount: list.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: 10),
-                      itemBuilder: (_, i) {
-                        final s = list[i];
-                        return Card(
-                          margin: EdgeInsets.zero,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: AppColors.hairline.withValues(
-                                alpha: 0.6,
-                              ),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.inkTeal.withValues(
-                                alpha: 0.1,
-                              ),
-                              child: Text(
-                                s.name.isNotEmpty
-                                    ? s.name[0].toUpperCase()
-                                    : 'S',
-                                style: const TextStyle(
-                                  color: AppColors.inkTeal,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              s.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              s.contactPerson ?? s.phone ?? s.email ?? '',
-                              style: const TextStyle(
-                                color: AppColors.slate,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
+    );
+
+    final fab = ManagementHeaderBar.buildFab(
+      context,
+      label: context.tr('suppliers.add_supplier'),
+      onTap: () => _openAddSupplier(),
     );
 
     if (widget.isEmbedded) {
       return Scaffold(
         backgroundColor: Colors.transparent,
         body: body,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () async {
-            final res = await Navigator.of(context).push(
-              MaterialPageRoute(
-                fullscreenDialog: true,
-                builder: (_) => AddEditSupplierView(orgId: widget.orgId),
-              ),
-            );
-            if (res == true) {
-              _loadSuppliers();
-            }
-          },
-          backgroundColor: AppColors.inkTeal,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.add),
-          label: Text(
-            context.tr('suppliers.add_supplier'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
+        floatingActionButton: fab,
       );
     }
 
@@ -213,67 +348,8 @@ class _SuppliersListViewState extends State<SuppliersListView> {
           ],
         ),
       ),
-      body: SafeArea(
-        child: body,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final res = await Navigator.of(context).push(
-            MaterialPageRoute(
-              fullscreenDialog: true,
-              builder: (_) => AddEditSupplierView(orgId: widget.orgId),
-            ),
-          );
-          if (res == true) {
-            _loadSuppliers();
-          }
-        },
-        backgroundColor: AppColors.inkTeal,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: Text(
-          context.tr('suppliers.add_supplier'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_shipping_outlined,
-              size: 48,
-              color: AppColors.slate.withAlpha(80),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.tr('suppliers.no_suppliers'),
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.tr('suppliers.no_suppliers_hint'),
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontSize: 13),
-            ),
-          ],
-        ),
-      ),
+      body: SafeArea(child: body),
+      floatingActionButton: fab,
     );
   }
 }

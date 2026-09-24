@@ -24,14 +24,9 @@ class CategoryRepository {
   CategoryRepository._internal();
   static final CategoryRepository instance = CategoryRepository._internal();
 
-  final List<Category> _categories = [
-    const Category(id: 'c1', name: 'Dairy',      colorIndex: 0),
-    const Category(id: 'c2', name: 'Bakery',     colorIndex: 1),
-    const Category(id: 'c3', name: 'Beverages',  colorIndex: 2),
-    const Category(id: 'c4', name: 'Snacks',     colorIndex: 3),
-  ];
+  final List<Category> _categories = [];
 
-  int _nextId = 5;
+  int _nextId = 1;
 
   Future<List<Category>> getAll() async => List.unmodifiable(_categories);
 

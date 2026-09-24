@@ -54,38 +54,11 @@ class Sidebar extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                _DrawerItem(
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard,
-                  label: context.tr('dashboard.home'),
-                  isSelected: selectedIndex == 0,
-                  onTap: () => _select(context, 0),
-                ),
-                _DrawerItem(
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long,
-                  label: context.tr('dashboard.bill'),
-                  isSelected: selectedIndex == 1,
-                  onTap: () => _select(context, 1),
-                ),
-                _DrawerItem(
-                  icon: Icons.settings_outlined,
-                  activeIcon: Icons.settings,
-                  label: context.tr('settings.title'),
-                  isSelected: selectedIndex == 2,
-                  onTap: () => _select(context, 2),
-                ),
-                const Divider(
-                  color: AppColors.hairline,
-                  height: 24,
-                  indent: 20,
-                  endIndent: 20,
-                ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
                   child: Text(
                     'MANAGEMENT',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
                       color: AppColors.inkTeal,
