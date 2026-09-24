@@ -32,7 +32,7 @@ jobs:
         run: flutter analyze
 
       - name: Build Web Release
-        run: flutter build web --release
+        run: flutter build web --release --dart-define-from-file=.env.production
 
       - name: Deploy to Cloudflare Pages
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
