@@ -235,7 +235,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                 ),
               ),
             ],
-            cardBuilder: (_, s, __) => InkWell(
+            cardBuilder: (ctx, s, _) => InkWell(
               onTap: () => _openAddSupplier(s),
               borderRadius: BorderRadius.circular(12),
               child: Card(

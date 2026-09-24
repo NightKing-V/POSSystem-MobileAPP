@@ -111,7 +111,7 @@ class ManagementDataTable extends StatelessWidget {
             Expanded(
               child: ListView.separated(
                 itemCount: itemCount,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (ctx, i) => Divider(
                   height: 1,
                   thickness: 1,
                   color: AppColors.hairline.withValues(alpha: 0.5),

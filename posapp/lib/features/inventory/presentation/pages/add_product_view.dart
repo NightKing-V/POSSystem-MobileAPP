@@ -203,7 +203,7 @@ class _AddProductViewState extends State<AddProductView> {
               ],
             ),
             DropdownButtonFormField<String>(
-              value: _selectedCategoryId,
+              initialValue: _selectedCategoryId,
               hint: Text(_isLoadingCats ? 'Loading categories...' : 'Select a category'),
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),

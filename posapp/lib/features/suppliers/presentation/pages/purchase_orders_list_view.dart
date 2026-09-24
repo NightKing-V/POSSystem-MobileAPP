@@ -301,7 +301,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                     StatusBadge(status: _mapStatus(po.status)),
               ),
             ],
-            cardBuilder: (_, po, __) => _PoListTile(
+            cardBuilder: (ctx, po, _) => _PoListTile(
               po: po,
               statusEnum: _mapStatus(po.status),
               onTap: () => _handlePoTap(po),

@@ -137,7 +137,6 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
       widget.onDelete != null;
 
   int get _activePage => widget.currentPage ?? _localPage;
-  int get _activeRowsPerPage => widget.rowsPerPage;
   int get _totalCount => widget.totalItems ?? widget.items.length;
 
   List<T> get _pagedItems {
@@ -351,7 +350,7 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
             Expanded(
               child: ListView.separated(
                 itemCount: displayList.length,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (ctx, i) => Divider(
                   height: 1,
                   thickness: 1,
                   color: AppColors.hairline.withValues(alpha: 0.5),
