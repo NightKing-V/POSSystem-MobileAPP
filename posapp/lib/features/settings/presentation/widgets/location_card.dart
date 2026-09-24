@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../../Organisations/data/orgs_repository.dart';
 
 /// Card component representing a store branch/location with status toggle.
 class LocationCard extends StatelessWidget {
@@ -12,7 +12,7 @@ class LocationCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final MockLocation location;
+  final LocationProps location;
   final bool isActive;
   final ValueChanged<bool> onToggle;
   final VoidCallback onTap;
@@ -69,7 +69,7 @@ class LocationCard extends StatelessWidget {
                             .titleMedium
                             ?.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
-                      if (location.id == 'loc1') ...[
+                      if (location.type == 'HEADQUARTERS' || location.type == 'MAIN') ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -92,7 +92,7 @@ class LocationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    location.address,
+                    location.address ?? 'Main Branch',
                     style: const TextStyle(fontSize: 12, color: AppColors.slate),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

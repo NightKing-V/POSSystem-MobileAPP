@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import './core/api/token_storage.dart';
 import './core/localization/app_locales.dart';
 import './core/localization/app_localizations.dart';
 import './core/localization/locale_controller.dart';
 import './core/theme/app_theme.dart';
 import './features/auth/presentation/pages/splash_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await TokenStorage.init();
   runApp(const MyApp());
 }
 

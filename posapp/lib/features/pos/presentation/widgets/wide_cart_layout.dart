@@ -3,6 +3,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../dashboard/presentation/widgets/billing_summary.dart';
 import '../../../inventory/presentation/widgets/product_grid.dart';
 import '../../../inventory/presentation/widgets/product_search_bar.dart';
+import '../../../customers/data/customers_repository.dart';
 import './cart_item_tile.dart';
 import './cart_props.dart';
 import './customer_section.dart';
@@ -20,12 +21,18 @@ class WideCartLayout extends StatelessWidget {
     required this.products,
     required this.showCustomer,
     required this.onToggleCustomer,
+    this.selectedCustomer,
+    required this.onCustomerSelected,
+    this.orgId,
   });
 
   final CartProps cart;
   final ProductProps products;
   final bool showCustomer;
   final VoidCallback onToggleCustomer;
+  final CustomerProps? selectedCustomer;
+  final ValueChanged<CustomerProps?> onCustomerSelected;
+  final String? orgId;
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +48,18 @@ class WideCartLayout extends StatelessWidget {
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
                 child: showCustomer
-                    ? CustomerSection(onDismiss: onToggleCustomer)
+                    ? CustomerSection(
+                        onDismiss: onToggleCustomer,
+                        selectedCustomer: selectedCustomer,
+                        onCustomerSelected: onCustomerSelected,
+                        orgId: orgId,
+                      )
                     : Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                        child: CustomerToggleChip(onTap: onToggleCustomer),
+                        child: CustomerToggleChip(
+                          onTap: onToggleCustomer,
+                          selectedCustomer: selectedCustomer,
+                        ),
                       ),
               ),
               // Search bar

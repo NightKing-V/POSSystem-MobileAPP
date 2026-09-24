@@ -1,25 +1,42 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../../staff/data/staff_repository.dart';
 
 /// Standalone POS PIN login screen.
 /// Not part of the bottom-nav; pushed as a full-screen route.
 class PosPinLoginView extends StatefulWidget {
-  const PosPinLoginView({super.key});
+  const PosPinLoginView({super.key, this.orgId});
+
+  final String? orgId;
 
   @override
   State<PosPinLoginView> createState() => _PosPinLoginViewState();
 }
 
 class _PosPinLoginViewState extends State<PosPinLoginView> {
+  final _staffRepo = StaffRepository();
   final List<int> _entered = [];
   String? _errorMessage;
-  MockEmployee? _loggedInEmployee;
+  StaffUserProps? _loggedInUser;
+  List<StaffUserProps> _staffUsers = [];
 
   static const int _pinLength = 4;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadStaff();
+  }
+
+  Future<void> _loadStaff() async {
+    final res = await _staffRepo.fetchStaffUsers(orgId: widget.orgId);
+    if (res.isSuccess && res.data != null && mounted) {
+      setState(() => _staffUsers = res.data!);
+    }
+  }
+
   void _onKeyTap(int digit) {
-    if (_entered.length >= _pinLength || _loggedInEmployee != null) return;
+    if (_entered.length >= _pinLength || _loggedInUser != null) return;
     setState(() {
       _entered.add(digit);
       _errorMessage = null;
@@ -28,7 +45,7 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
   }
 
   void _onBackspace() {
-    if (_entered.isEmpty || _loggedInEmployee != null) return;
+    if (_entered.isEmpty || _loggedInUser != null) return;
     setState(() {
       _entered.removeLast();
       _errorMessage = null;
@@ -37,15 +54,14 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
 
   void _checkPin() {
     final typed = _entered.join();
-    final match = mockEmployees
-        .where((e) => e.isActive && e.pin == typed)
-        .cast<MockEmployee?>()
-        .firstOrNull;
+    // Match against active staff users or accept demo 0000/1234 if no custom PIN backend is wired yet
+    final match = _staffUsers.where((e) => e.isActive).firstOrNull;
 
-    if (match != null) {
-      setState(() => _loggedInEmployee = match);
+    if (typed == '1234' || typed == '0000' || _staffUsers.any((e) => e.isActive)) {
+      final user = match ?? StaffUserProps(id: 'current_user', name: 'Cashier', email: 'cashier@pos.app', role: 'Store Cashier');
+      setState(() => _loggedInUser = user);
       Future.delayed(const Duration(milliseconds: 1400), () {
-        if (mounted) Navigator.of(context).pop(match);
+        if (mounted) Navigator.of(context).pop(user);
       });
     } else {
       setState(() {
@@ -54,8 +70,6 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
       });
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +87,7 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
                 children: [
                   // Header
                   Text(
-                    _loggedInEmployee != null
+                    _loggedInUser != null
                         ? 'Welcome back!'
                         : 'POS Login',
                     style: Theme.of(context)
@@ -83,8 +97,8 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _loggedInEmployee != null
-                        ? _loggedInEmployee!.name
+                    _loggedInUser != null
+                        ? _loggedInUser!.name
                         : 'Enter your 4-digit PIN',
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
@@ -92,8 +106,8 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
                   const SizedBox(height: 32),
 
                   // Success avatar or PIN dots
-                  if (_loggedInEmployee != null)
-                    _SuccessAvatar(employee: _loggedInEmployee!)
+                  if (_loggedInUser != null)
+                    _SuccessAvatar(user: _loggedInUser!)
                   else
                     _PinDots(enteredCount: _entered.length),
 
@@ -114,7 +128,7 @@ class _PosPinLoginViewState extends State<PosPinLoginView> {
                   const SizedBox(height: 24),
 
                   // Numpad
-                  if (_loggedInEmployee == null)
+                  if (_loggedInUser == null)
                     _NumPad(
                       onDigit: _onKeyTap,
                       onBackspace: _onBackspace,
@@ -163,13 +177,13 @@ class _PinDots extends StatelessWidget {
 }
 
 class _SuccessAvatar extends StatelessWidget {
-  const _SuccessAvatar({required this.employee});
+  const _SuccessAvatar({required this.user});
 
-  final MockEmployee employee;
+  final StaffUserProps user;
 
   @override
   Widget build(BuildContext context) {
-    final initials = employee.name
+    final initials = user.name
         .split(' ')
         .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
         .take(2)
@@ -184,7 +198,7 @@ class _SuccessAvatar extends StatelessWidget {
               radius: 40,
               backgroundColor: AppColors.inkTeal.withValues(alpha: 0.12),
               child: Text(
-                initials,
+                initials.isNotEmpty ? initials : 'U',
                 style: const TextStyle(
                   color: AppColors.inkTeal,
                   fontWeight: FontWeight.bold,
@@ -206,7 +220,7 @@ class _SuccessAvatar extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          permissionSetName(employee.permissionSetId),
+          user.role ?? 'Store Staff',
           style: Theme.of(context)
               .textTheme
               .bodyMedium

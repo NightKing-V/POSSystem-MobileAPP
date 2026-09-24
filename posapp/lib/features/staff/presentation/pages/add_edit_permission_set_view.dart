@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../data/staff_repository.dart';
+
+const List<String> kDefaultPermissionCategories = [
+  'POS Access',
+  'Discounts',
+  'Refunds',
+  'Reports',
+  'Inventory',
+  'Settings',
+];
 
 class AddEditPermissionSetView extends StatefulWidget {
-  const AddEditPermissionSetView({super.key, this.permissionSet});
+  const AddEditPermissionSetView({super.key, this.role, this.isModal = true});
 
-  final MockPermissionSet? permissionSet;
+  final RoleProps? role;
+  final bool isModal;
 
   @override
   State<AddEditPermissionSetView> createState() =>
@@ -13,28 +23,33 @@ class AddEditPermissionSetView extends StatefulWidget {
 }
 
 class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
+  final _staffRepo = StaffRepository();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
+  late final TextEditingController _descCtrl;
   late Map<String, bool> _permissions;
+  bool _isSaving = false;
 
-  bool get _isEditing => widget.permissionSet != null;
+  bool get _isEditing => widget.role != null;
 
-  bool get _allEnabled =>
-      _permissions.values.every((v) => v);
+  bool get _allEnabled => _permissions.values.every((v) => v);
 
   @override
   void initState() {
     super.initState();
-    final ps = widget.permissionSet;
-    _nameCtrl = TextEditingController(text: ps?.name ?? '');
-    _permissions = ps != null
-        ? Map.of(ps.permissions)
-        : {for (final c in kPermissionCategories) c: false};
+    final r = widget.role;
+    _nameCtrl = TextEditingController(text: r?.name ?? '');
+    _descCtrl = TextEditingController(text: r?.description ?? '');
+    _permissions = {
+      for (final c in kDefaultPermissionCategories)
+        c: r != null ? r.permissions.contains(c) : false
+    };
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
 
@@ -46,18 +61,43 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
     });
   }
 
-  void _save() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pop();
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    final selectedPerms = _permissions.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toList();
+
+    final dto = CreateRoleDto(
+      name: _nameCtrl.text.trim(),
+      description: _descCtrl.text.trim(),
+      permissions: selectedPerms,
+    );
+
+    final res = await _staffRepo.createRole(dto);
+    if (!mounted) return;
+
+    setState(() => _isSaving = false);
+
+    if (res.isSuccess) {
+      Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEditing
-              ? 'Permission set updated.'
-              : 'Permission set created.'),
+          content: Text(_isEditing ? 'Role updated.' : 'Role created.'),
           backgroundColor: AppColors.inkTeal,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.errorMessage ?? 'Failed to save role.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -65,6 +105,148 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
 
   @override
   Widget build(BuildContext context) {
+    final formBody = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Role Details',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                  labelText: 'Role Name *',
+                  hintText: 'e.g. Cashier, Store Manager, Supervisor'),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty)
+                      ? 'Please enter a role name'
+                      : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _descCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  hintText: 'e.g. Front desk billing & order dispatch'),
+            ),
+            const SizedBox(height: 24),
+
+            const Divider(color: AppColors.hairline, height: 1),
+            const SizedBox(height: 20),
+
+            Text(
+              'Access Permissions',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+            ),
+            const SizedBox(height: 12),
+
+            // Master switch
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _allEnabled,
+              onChanged: _toggleAll,
+              activeThumbColor: AppColors.inkTeal,
+              title: const Text(
+                'Full Access',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                'Grant all permissions across the platform',
+                style: TextStyle(fontSize: 12, color: AppColors.slate),
+              ),
+              secondary: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.inkTeal.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.verified_user_outlined,
+                    color: AppColors.inkTeal, size: 20),
+              ),
+            ),
+            const Divider(color: AppColors.hairline, height: 1),
+
+            // Permission toggles
+            for (int i = 0; i < kDefaultPermissionCategories.length; i++) ...[
+              _PermissionTile(
+                category: kDefaultPermissionCategories[i],
+                value: _permissions[kDefaultPermissionCategories[i]] ?? false,
+                onChanged: (v) => setState(() =>
+                    _permissions[kDefaultPermissionCategories[i]] = v),
+              ),
+              if (i != kDefaultPermissionCategories.length - 1)
+                const Divider(color: AppColors.hairline, height: 1),
+            ],
+
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.slate,
+                      side: const BorderSide(color: AppColors.hairline, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      minimumSize: const Size(0, 52),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.inkTeal,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      minimumSize: const Size(0, 52),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            _isEditing ? 'Save Changes' : 'Create Role',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isModal) {
+      return formBody;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -79,146 +261,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               ?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Role name card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: AppColors.hairline.withValues(alpha: 0.6),
-                            width: 1.5),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Role name',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontSize: 16)),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _nameCtrl,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                                hintText: 'e.g. Cashier, Manager'),
-                            validator: (v) =>
-                                (v == null || v.trim().isEmpty)
-                                    ? 'Please enter a role name'
-                                    : null,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Permissions card
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: AppColors.hairline.withValues(alpha: 0.6),
-                            width: 1.5),
-                      ),
-                      child: Column(
-                        children: [
-                          // Full-access master switch
-                          SwitchListTile(
-                            value: _allEnabled,
-                            onChanged: _toggleAll,
-                            activeThumbColor: AppColors.inkTeal,
-                            title: const Text(
-                              'Full Access',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            subtitle: const Text(
-                              'Enable all permissions at once',
-                              style: TextStyle(
-                                  fontSize: 12, color: AppColors.slate),
-                            ),
-                            secondary: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: AppColors.inkTeal.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                  Icons.verified_user_outlined,
-                                  color: AppColors.inkTeal,
-                                  size: 20),
-                            ),
-                          ),
-                          const Divider(
-                              color: AppColors.hairline, height: 1, indent: 64),
-
-                          // Per-permission toggles
-                          for (int i = 0;
-                              i < kPermissionCategories.length;
-                              i++) ...[
-                            _PermissionTile(
-                              category: kPermissionCategories[i],
-                              value: _permissions[kPermissionCategories[i]] ??
-                                  false,
-                              onChanged: (v) => setState(() =>
-                                  _permissions[kPermissionCategories[i]] = v),
-                            ),
-                            if (i != kPermissionCategories.length - 1)
-                              const Divider(
-                                  color: AppColors.hairline,
-                                  height: 1,
-                                  indent: 64),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.inkTeal,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: Text(
-                          _isEditing ? 'Save Changes' : 'Create Role',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      body: SafeArea(child: formBody),
     );
   }
 }
@@ -265,4 +308,3 @@ class _PermissionTile extends StatelessWidget {
     );
   }
 }
-

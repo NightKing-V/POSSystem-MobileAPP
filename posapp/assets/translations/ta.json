@@ -73,6 +73,8 @@
   },
   "dashboard": {
     "title": "முகப்பு பலகை",
+    "home": "முகப்பு",
+    "bill": "பில்",
     "today_sales": "இன்றைய விற்பனை",
     "gross_profit": "மொத்த லாபம்",
     "total_orders": "ஆர்டர்கள்",

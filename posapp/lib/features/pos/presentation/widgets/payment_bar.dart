@@ -51,37 +51,40 @@ class PaymentBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // ── Payment method chips ──────────────────────────────────────────
-          Row(
-            children: [
-              Text(
-                context.tr('pos.payment_method'),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontSize: 12),
-              ),
-              const SizedBox(width: 10),
-              _PayChip(
-                label: context.tr('pos.cash'),
-                icon: Icons.payments_outlined,
-                selected: selectedMethod == PaymentMethod.cash,
-                onTap: () => onMethodChanged(PaymentMethod.cash),
-              ),
-              const SizedBox(width: 6),
-              _PayChip(
-                label: context.tr('pos.card'),
-                icon: Icons.credit_card_rounded,
-                selected: selectedMethod == PaymentMethod.card,
-                onTap: () => onMethodChanged(PaymentMethod.card),
-              ),
-              const SizedBox(width: 6),
-              _PayChip(
-                label: context.tr('pos.bank_transfer'),
-                icon: Icons.account_balance_wallet_outlined,
-                selected: selectedMethod == PaymentMethod.wallet,
-                onTap: () => onMethodChanged(PaymentMethod.wallet),
-              ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Text(
+                  context.tr('pos.payment_method'),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontSize: 12),
+                ),
+                const SizedBox(width: 10),
+                _PayChip(
+                  label: context.tr('pos.cash'),
+                  icon: Icons.payments_outlined,
+                  selected: selectedMethod == PaymentMethod.cash,
+                  onTap: () => onMethodChanged(PaymentMethod.cash),
+                ),
+                const SizedBox(width: 6),
+                _PayChip(
+                  label: context.tr('pos.card'),
+                  icon: Icons.credit_card_rounded,
+                  selected: selectedMethod == PaymentMethod.card,
+                  onTap: () => onMethodChanged(PaymentMethod.card),
+                ),
+                const SizedBox(width: 6),
+                _PayChip(
+                  label: context.tr('pos.bank_transfer'),
+                  icon: Icons.account_balance_wallet_outlined,
+                  selected: selectedMethod == PaymentMethod.wallet,
+                  onTap: () => onMethodChanged(PaymentMethod.wallet),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 10),
 
@@ -121,19 +124,22 @@ class PaymentBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.bolt_rounded, size: 17),
-                        const SizedBox(width: 5),
-                        Text(
-                          '${context.tr('pos.pay_now')}  Rs. ${grandTotal.toStringAsFixed(2)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                      ],
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.bolt_rounded, size: 17),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${context.tr('pos.pay_now')}  Rs. ${grandTotal.toStringAsFixed(2)}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

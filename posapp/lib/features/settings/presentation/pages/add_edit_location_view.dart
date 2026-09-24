@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../dashboard/domain/mock_data.dart';
+import '../../../Organisations/data/orgs_repository.dart';
 
 class AddEditLocationView extends StatefulWidget {
-  const AddEditLocationView({super.key, this.location});
+  const AddEditLocationView({
+    super.key,
+    this.location,
+    this.isModal = true,
+  });
 
-  final MockLocation? location;
+  final LocationProps? location;
+  final bool isModal;
 
   @override
   State<AddEditLocationView> createState() => _AddEditLocationViewState();
 }
 
 class _AddEditLocationViewState extends State<AddEditLocationView> {
+  final _orgsRepo = OrgsRepository();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _addressCtrl;
-  late final TextEditingController _taxCtrl;
-  late String _selectedTimezone;
-  late String _selectedCurrency;
-
-  static const _timezones = [
-    'Asia/Colombo',
-    'Asia/Kolkata',
-    'Asia/Dubai',
-    'Europe/London',
-    'America/New_York',
-  ];
-
-  static const _currencies = ['LKR', 'INR', 'AED', 'GBP', 'USD'];
+  late final TextEditingController _phoneCtrl;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.location != null;
 
@@ -37,31 +32,50 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
     final loc = widget.location;
     _nameCtrl = TextEditingController(text: loc?.name ?? '');
     _addressCtrl = TextEditingController(text: loc?.address ?? '');
-    _taxCtrl = TextEditingController(
-        text: loc != null ? loc.taxRate.toStringAsFixed(0) : '15');
-    _selectedTimezone = loc?.timezone ?? _timezones.first;
-    _selectedCurrency = loc?.currency ?? _currencies.first;
+    _phoneCtrl = TextEditingController(text: loc?.phone ?? '');
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _addressCtrl.dispose();
-    _taxCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
-  void _save() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pop();
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    final dto = CreateOrgDto(
+      businessName: _nameCtrl.text.trim(),
+      businessType: 'BRANCH',
+      address: _addressCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+    );
+
+    final res = await _orgsRepo.createOrganization(dto);
+    if (!mounted) return;
+
+    setState(() => _isSaving = false);
+
+    if (res.isSuccess) {
+      Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              _isEditing ? 'Location updated.' : 'Location created.'),
+          content: Text(_isEditing ? 'Location updated.' : 'Location created.'),
           backgroundColor: AppColors.inkTeal,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.errorMessage ?? 'Failed to save location.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -69,6 +83,121 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
 
   @override
   Widget build(BuildContext context) {
+    final formBody = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Location Details',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            _Label('Name *'),
+            TextFormField(
+              controller: _nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                hintText: 'e.g. Main Branch, Outlet 2',
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Please enter a name'
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            _Label('Address *'),
+            TextFormField(
+              controller: _addressCtrl,
+              maxLines: 2,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                hintText: 'Street, City',
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Please enter an address'
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            _Label('Phone Number'),
+            TextFormField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                hintText: '+94 77 123 4567',
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.slate,
+                      side: const BorderSide(
+                        color: AppColors.hairline,
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(0, 52),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.inkTeal,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(0, 52),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            _isEditing ? 'Save Changes' : 'Create Location',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.isModal) {
+      return formBody;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -77,151 +206,10 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
         titleSpacing: 16,
         title: Text(
           _isEditing ? 'Edit Location' : 'Add Location',
-          style:
-              Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _FormCard(
-                      title: 'Location details',
-                      children: [
-                        _Label('Name *'),
-                        TextFormField(
-                          controller: _nameCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration:
-                              const InputDecoration(hintText: 'e.g. Main Branch'),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Please enter a name'
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        _Label('Address *'),
-                        TextFormField(
-                          controller: _addressCtrl,
-                          maxLines: 2,
-                          textCapitalization: TextCapitalization.sentences,
-                          decoration:
-                              const InputDecoration(hintText: 'Street, City'),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Please enter an address'
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        _Label('Tax Rate (%)'),
-                        TextFormField(
-                          controller: _taxCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration:
-                              const InputDecoration(hintText: '15', suffixText: '%'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _FormCard(
-                      title: 'Regional settings',
-                      children: [
-                        _Label('Timezone'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedTimezone,
-                          items: _timezones
-                              .map((tz) => DropdownMenuItem(
-                                  value: tz, child: Text(tz)))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedTimezone = v!),
-                          decoration: const InputDecoration(),
-                        ),
-                        const SizedBox(height: 16),
-                        _Label('Currency'),
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedCurrency,
-                          items: _currencies
-                              .map((c) => DropdownMenuItem(
-                                  value: c, child: Text(c)))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedCurrency = v!),
-                          decoration: const InputDecoration(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.inkTeal,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: Text(
-                          _isEditing ? 'Save Changes' : 'Create Location',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FormCard extends StatelessWidget {
-  const _FormCard({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppColors.hairline.withValues(alpha: 0.6), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontSize: 16)),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
+      body: SafeArea(child: formBody),
     );
   }
 }
@@ -238,11 +226,11 @@ class _Label extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.ink,
-            fontWeight: FontWeight.bold,
-            fontSize: 13),
+              color: AppColors.ink,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
       ),
     );
   }
 }
-

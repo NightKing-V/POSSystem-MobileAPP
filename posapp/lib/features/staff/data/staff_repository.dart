@@ -60,6 +60,53 @@ class CreateStaffUserDto {
       };
 }
 
+/// Role / Permission Set model
+class RoleProps {
+  final String id;
+  final String name;
+  final String? description;
+  final List<String> permissions;
+
+  const RoleProps({
+    required this.id,
+    required this.name,
+    this.description,
+    this.permissions = const [],
+  });
+
+  factory RoleProps.fromJson(Map<String, dynamic> json) {
+    List<String> perms = [];
+    if (json['permissions'] is List) {
+      perms = (json['permissions'] as List).map((e) => e.toString()).toList();
+    }
+    return RoleProps(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? json['role_name']?.toString() ?? 'Role',
+      description: json['description']?.toString(),
+      permissions: perms,
+    );
+  }
+}
+
+/// DTO for Creating Role
+class CreateRoleDto {
+  final String name;
+  final String? description;
+  final List<String> permissions;
+
+  const CreateRoleDto({
+    required this.name,
+    this.description,
+    this.permissions = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+        'name': name.trim(),
+        if (description?.isNotEmpty == true) 'description': description!.trim(),
+        'permissions': permissions,
+      };
+}
+
 class StaffRepository {
   final ApiClient _apiClient;
 
@@ -82,6 +129,29 @@ class StaffRepository {
   Future<ApiResponse<Map<String, dynamic>>> createStaffUser(CreateStaffUserDto dto) async {
     return _apiClient.post<Map<String, dynamic>>(
       ApiConstants.users,
+      body: dto.toJson(),
+    );
+  }
+
+  /// Fetch all roles
+  Future<ApiResponse<List<RoleProps>>> fetchRoles({String? orgId}) async {
+    final query = orgId != null ? {'orgId': orgId} : null;
+    return _apiClient.get<List<RoleProps>>(
+      ApiConstants.roles,
+      queryParams: query,
+      parser: (json) {
+        if (json is List) {
+          return json.map((e) => RoleProps.fromJson(e as Map<String, dynamic>)).toList();
+        }
+        return [];
+      },
+    );
+  }
+
+  /// Create a new role
+  Future<ApiResponse<Map<String, dynamic>>> createRole(CreateRoleDto dto) async {
+    return _apiClient.post<Map<String, dynamic>>(
+      ApiConstants.roles,
       body: dto.toJson(),
     );
   }

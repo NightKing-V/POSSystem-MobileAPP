@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../inventory/presentation/pages/add_product_view.dart';
+import '../../../customers/presentation/pages/customers_list_view.dart';
+import '../../../inventory/presentation/pages/categories_list_view.dart';
+import '../../../inventory/presentation/pages/products_list_view.dart';
 import '../../../pos/presentation/pages/cart_view.dart';
 import '../../../settings/presentation/pages/settings_view.dart';
 import '../../../staff/presentation/pages/employees_list_view.dart';
 import '../../../suppliers/presentation/pages/purchase_orders_list_view.dart';
+import '../../../suppliers/presentation/pages/suppliers_list_view.dart';
 import '../widgets/side_nav_panel.dart';
 import '../widgets/sidebar.dart';
 import './dashboard_home_view.dart';
 
 /// The main landing screen after a business/branch is selected.
-/// Featuring a bottom navigation bar to switch between Home, Add Product, Cart, and Settings.
+/// Featuring navigation between Home, Bill, Settings, and Management Views.
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
     super.key,
@@ -36,11 +39,21 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0:
         return widget.businessName;
       case 1:
-        return context.tr('inventory.add_product');
+        return context.tr('dashboard.bill');
       case 2:
-        return context.tr('pos.cart');
-      case 3:
         return context.tr('settings.title');
+      case 3:
+        return context.tr('inventory.products');
+      case 4:
+        return context.tr('inventory.categories');
+      case 5:
+        return context.tr('customers.title');
+      case 6:
+        return context.tr('staff.title');
+      case 7:
+        return context.tr('suppliers.title');
+      case 8:
+        return context.tr('suppliers.purchase_orders');
       default:
         return widget.businessName;
     }
@@ -51,11 +64,21 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0:
         return context.tr('dashboard.title');
       case 1:
-        return context.tr('inventory.title');
-      case 2:
         return context.tr('pos.title');
-      case 3:
+      case 2:
         return context.tr('settings.general');
+      case 3:
+        return 'Product Catalog & Inventory';
+      case 4:
+        return 'Inventory Categories';
+      case 5:
+        return 'Customer Directory & Loyalty';
+      case 6:
+        return 'Staff & Access Permissions';
+      case 7:
+        return 'Vendor & Supplier Directory';
+      case 8:
+        return 'Stock Replenishment Orders';
       default:
         return '';
     }
@@ -66,31 +89,28 @@ class _DashboardPageState extends State<DashboardPage> {
       case 0:
         return DashboardHomeView(
           businessName: widget.businessName,
+          orgId: widget.orgId,
           onQuickActionTap: (actionLabel) {
             if (actionLabel == 'New Sale') {
               setState(() {
-                _selectedIndex = 2;
+                _selectedIndex = 1;
               });
             } else if (actionLabel == 'Settings') {
               setState(() {
-                _selectedIndex = 3;
+                _selectedIndex = 2;
               });
             } else if (actionLabel == 'Inventory') {
               setState(() {
-                _selectedIndex = 1;
+                _selectedIndex = 3;
               });
             } else if (actionLabel == 'Staff') {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const EmployeesListView(),
-                ),
-              );
+              setState(() {
+                _selectedIndex = 6;
+              });
             } else if (actionLabel == 'Purchase Orders') {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const PurchaseOrdersListView(),
-                ),
-              );
+              setState(() {
+                _selectedIndex = 8;
+              });
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -102,17 +122,27 @@ class _DashboardPageState extends State<DashboardPage> {
           },
         );
       case 1:
-        return const AddProductView();
-      case 2:
         return CartView(
           orgId: widget.orgId,
           locationId: widget.locationId,
         );
-      case 3:
+      case 2:
         return SettingsView(
           businessName: widget.businessName,
           orgId: widget.orgId,
         );
+      case 3:
+        return const ProductsListView(isEmbedded: true);
+      case 4:
+        return const CategoriesListView(isEmbedded: true);
+      case 5:
+        return CustomersListView(orgId: widget.orgId, isEmbedded: true);
+      case 6:
+        return EmployeesListView(orgId: widget.orgId, isEmbedded: true);
+      case 7:
+        return SuppliersListView(orgId: widget.orgId, isEmbedded: true);
+      case 8:
+        return PurchaseOrdersListView(orgId: widget.orgId, isEmbedded: true);
       default:
         return Container();
     }
@@ -139,30 +169,40 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final scaffold = Scaffold(
       backgroundColor: AppColors.paper,
-      appBar: AppBar(
-        automaticallyImplyLeading: !isWide,
-        backgroundColor: AppColors.paper,
-        elevation: 0,
-        titleSpacing: 24,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _getAppBarTitle(context),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+      appBar: (isWide && _selectedIndex >= 3)
+          ? null
+          : AppBar(
+              automaticallyImplyLeading: !isWide,
+              backgroundColor: AppColors.paper,
+              elevation: 0,
+              titleSpacing: 24,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getAppBarTitle(context),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+                  ),
+                  Text(
+                    _getAppBarSubtitle(context),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
+              actions: isWide ? null : _buildAppBarActions(),
             ),
-            Text(
-              _getAppBarSubtitle(context),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
-            ),
-          ],
-        ),
-        actions: isWide ? null : _buildAppBarActions(),
-      ),
       drawer: isWide
           ? null
-          : Sidebar(businessName: widget.businessName),
+          : Sidebar(
+              businessName: widget.businessName,
+              selectedIndex: _selectedIndex,
+              onItemSelected: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+            ),
       body: SafeArea(
         child: _buildBody(),
       ),
@@ -179,7 +219,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
+                currentIndex: _selectedIndex <= 2 ? _selectedIndex : 0,
                 onTap: (index) {
                   setState(() {
                     _selectedIndex = index;
@@ -197,17 +237,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.dashboard_outlined),
                     activeIcon: const Icon(Icons.dashboard),
-                    label: context.tr('dashboard.title'),
+                    label: context.tr('dashboard.home'),
                   ),
                   BottomNavigationBarItem(
-                    icon: const Icon(Icons.add_circle_outline),
-                    activeIcon: const Icon(Icons.add_circle),
-                    label: context.tr('inventory.add_product'),
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.shopping_cart_outlined),
-                    activeIcon: const Icon(Icons.shopping_cart),
-                    label: context.tr('pos.cart'),
+                    icon: const Icon(Icons.receipt_long_outlined),
+                    activeIcon: const Icon(Icons.receipt_long),
+                    label: context.tr('dashboard.bill'),
                   ),
                   BottomNavigationBarItem(
                     icon: const Icon(Icons.settings_outlined),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/api/token_storage.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_modal.dart';
+import '../../../customers/data/customers_repository.dart';
 import '../../../inventory/data/inventory_repository.dart';
 import '../../../inventory/domain/models/product.dart';
 import '../../billing/bill_calculator.dart';
@@ -34,14 +36,11 @@ class _CartViewState extends State<CartView> {
   final _billsRepo = BillsRepository();
   final _inventoryRepo = InventoryRepository();
 
-  List<Product> _allProducts = Product.mockProducts;
+  List<Product> _allProducts = [];
 
   // ── Cart ──────────────────────────────────────────────────────────────────
-  final List<CartItem> _cartItems = [
-    CartItem(product: Product.mockProducts[0], quantity: 2),
-    CartItem(product: Product.mockProducts[2], quantity: 1),
-    CartItem(product: Product.mockProducts[7], quantity: 3),
-  ];
+  final List<CartItem> _cartItems = [];
+  CustomerProps? _selectedCustomer;
 
   // ── Product search ─────────────────────────────────────────────────────────
   String _searchQuery = '';
@@ -256,6 +255,7 @@ class _CartViewState extends State<CartView> {
       orgId: widget.orgId ?? '',
       locationId: widget.locationId ?? '',
       cashierId: cashierId,
+      customerId: _selectedCustomer?.id,
       items: billItems,
       payments: [
         BillPaymentDto(
@@ -289,83 +289,80 @@ class _CartViewState extends State<CartView> {
   }
 
   void _showReceiptSheet(double total, String billNum) {
-    showModalBottomSheet(
+    showResponsiveModal(
       context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A).withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline_rounded,
-                  color: Color(0xFF16A34A),
-                  size: 32,
-                ),
+      maxWidth: 440,
+      maxHeightFactor: 0.60,
+      showHeader: false,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Payment Successful',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              child: const Icon(
+                Icons.check_circle_outline_rounded,
+                color: Color(0xFF16A34A),
+                size: 32,
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Receipt $billNum',
-                style: const TextStyle(fontSize: 13, color: AppColors.slate),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Payment Successful',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Receipt $billNum',
+              style: const TextStyle(fontSize: 13, color: AppColors.slate),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.paper,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.paper,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Amount Paid',
-                        style: TextStyle(color: AppColors.slate)),
-                    Text(
-                      '\$${total.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.inkTeal,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Amount Paid',
+                      style: TextStyle(color: AppColors.slate)),
+                  Text(
+                    'Rs. ${total.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.ink,
                     ),
                   ),
-                  child: const Text('Done',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.inkTeal,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('Done',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -411,6 +408,10 @@ class _CartViewState extends State<CartView> {
                 showCustomer: _showCustomer,
                 onToggleCustomer: () =>
                     setState(() => _showCustomer = !_showCustomer),
+                selectedCustomer: _selectedCustomer,
+                onCustomerSelected: (c) =>
+                    setState(() => _selectedCustomer = c),
+                orgId: widget.orgId,
               )
             : NarrowCartLayout(
                 cart: cartProps,
@@ -421,6 +422,10 @@ class _CartViewState extends State<CartView> {
                     setState(() => _showProductPanel = !_showProductPanel),
                 onToggleCustomer: () =>
                     setState(() => _showCustomer = !_showCustomer),
+                selectedCustomer: _selectedCustomer,
+                onCustomerSelected: (c) =>
+                    setState(() => _selectedCustomer = c),
+                orgId: widget.orgId,
               );
       },
     );

@@ -3,21 +3,25 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../auth/presentation/pages/login_page.dart';
-import '../../../customers/presentation/pages/customers_list_view.dart';
-import '../../../inventory/presentation/pages/categories_list_view.dart';
-import '../../../inventory/presentation/pages/products_list_view.dart';
 import '../../../settings/presentation/widgets/settings_dialogs.dart';
-import '../../../staff/presentation/pages/employees_list_view.dart';
-import '../../../suppliers/presentation/pages/suppliers_list_view.dart';
 
 /// Navigation Drawer for mobile/narrow viewports.
 class Sidebar extends StatelessWidget {
   const Sidebar({
     super.key,
     required this.businessName,
+    this.selectedIndex = 0,
+    this.onItemSelected,
   });
 
   final String businessName;
+  final int selectedIndex;
+  final ValueChanged<int>? onItemSelected;
+
+  void _select(BuildContext context, int index) {
+    Navigator.of(context).pop();
+    onItemSelected?.call(index);
+  }
 
   Future<void> _handleLogout(BuildContext context) async {
     Navigator.of(context).pop(); // close drawer
@@ -48,79 +52,61 @@ class Sidebar extends StatelessWidget {
           _buildHeader(context, initial),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
-                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                  child: Text(
+                    'MANAGEMENT',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.inkTeal,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ),
                 _DrawerItem(
                   icon: Icons.inventory_2_outlined,
+                  activeIcon: Icons.inventory_2,
                   label: context.tr('inventory.products'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProductsListView(),
-                      ),
-                    );
-                  },
+                  isSelected: selectedIndex == 3,
+                  onTap: () => _select(context, 3),
                 ),
                 _DrawerItem(
                   icon: Icons.category_outlined,
+                  activeIcon: Icons.category,
                   label: context.tr('inventory.categories'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CategoriesListView(),
-                      ),
-                    );
-                  },
+                  isSelected: selectedIndex == 4,
+                  onTap: () => _select(context, 4),
                 ),
                 _DrawerItem(
                   icon: Icons.people_alt_outlined,
+                  activeIcon: Icons.people_alt,
                   label: context.tr('customers.title'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CustomersListView(),
-                      ),
-                    );
-                  },
+                  isSelected: selectedIndex == 5,
+                  onTap: () => _select(context, 5),
                 ),
                 _DrawerItem(
                   icon: Icons.badge_outlined,
+                  activeIcon: Icons.badge,
                   label: context.tr('staff.employees'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const EmployeesListView(),
-                      ),
-                    );
-                  },
+                  isSelected: selectedIndex == 6,
+                  onTap: () => _select(context, 6),
                 ),
                 _DrawerItem(
                   icon: Icons.local_shipping_outlined,
+                  activeIcon: Icons.local_shipping,
                   label: context.tr('suppliers.title'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SuppliersListView(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(
-                  color: AppColors.hairline,
-                  height: 24,
-                  indent: 24,
-                  endIndent: 24,
+                  isSelected: selectedIndex == 7,
+                  onTap: () => _select(context, 7),
                 ),
                 _DrawerItem(
-                  icon: Icons.settings_outlined,
-                  label: context.tr('settings.title'),
-                  onTap: () => Navigator.of(context).pop(),
+                  icon: Icons.assignment_outlined,
+                  activeIcon: Icons.assignment,
+                  label: context.tr('suppliers.purchase_orders'),
+                  isSelected: selectedIndex == 8,
+                  onTap: () => _select(context, 8),
                 ),
               ],
             ),
@@ -204,33 +190,51 @@ class Sidebar extends StatelessWidget {
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
     required this.icon,
+    this.activeIcon,
     required this.label,
     required this.onTap,
-    this.textColor = AppColors.ink,
-    this.iconColor = AppColors.slate,
+    this.isSelected = false,
+    this.textColor,
+    this.iconColor,
   });
 
   final IconData icon;
+  final IconData? activeIcon;
   final String label;
   final VoidCallback onTap;
-  final Color textColor;
-  final Color iconColor;
+  final bool isSelected;
+  final Color? textColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-      leading: Icon(icon, color: iconColor, size: 24),
-      title: Text(
-        label,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
+    final effectiveIconColor = iconColor ??
+        (isSelected ? AppColors.inkTeal : AppColors.slate);
+    final effectiveTextColor = textColor ??
+        (isSelected ? AppColors.inkTeal : AppColors.ink);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        selected: isSelected,
+        selectedTileColor: AppColors.inkTeal.withValues(alpha: 0.08),
+        leading: Icon(
+          (isSelected && activeIcon != null) ? activeIcon! : icon,
+          color: effectiveIconColor,
+          size: 22,
         ),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: effectiveTextColor,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 14.5,
+          ),
+        ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
