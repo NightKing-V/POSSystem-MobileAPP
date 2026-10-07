@@ -37,11 +37,11 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordCtrl.text;
 
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _errorText = 'Please enter a valid email address.');
+      setState(() => _errorText = context.tr('auth.invalid_email'));
       return;
     }
     if (password.isEmpty) {
-      setState(() => _errorText = 'Please enter your password.');
+      setState(() => _errorText = context.tr('auth.password_min_length'));
       return;
     }
 
@@ -59,13 +59,13 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     if (response.isSuccess) {
-      ApiHelper.showSuccessSnackBar(context, 'Signed in successfully!');
+      ApiHelper.showSuccessSnackBar(context, context.tr('common.success'));
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
       );
     } else {
       setState(() {
-        _errorText = response.errorMessage ?? 'Invalid email or password.';
+        _errorText = response.errorMessage ?? context.tr('common.error');
       });
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
     }
@@ -122,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 32),
                         AuthTextField(
                           label: context.tr('auth.email'),
-                          hintText: 'you@business.com',
+                          hintText: context.tr('auth.email_hint'),
                           keyboardType: TextInputType.emailAddress,
                           controller: _emailCtrl,
                         ),

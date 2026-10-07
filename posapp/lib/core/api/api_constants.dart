@@ -12,6 +12,12 @@ class ApiConstants {
     ),
   );
 
+  /// OTP expiration duration in seconds (defaults to 3600 seconds / 1 hour)
+  static const int otpExpirySeconds = int.fromEnvironment(
+    'OTP_EXPIRY_SECONDS',
+    defaultValue: 3600,
+  );
+
   /// Set a custom base URL at runtime if needed
   static void setBaseUrl(String url) {
     _customBaseUrl = url;
@@ -69,8 +75,23 @@ class ApiConstants {
   // Inventory & Locations
   static const String inventory = '/inventory';
 
-  // Roles & Permissions
+  // Roles & Permissions (Org Roles & System Permissions)
   static const String roles = '/roles';
+  static const String orgRoles = '/roles/org';
   static const String permissions = '/roles/permissions';
+  static const String permissionsAll = '/roles/permissions/all';
+  static const String systemRoles = '/roles/system';
   static const String users = '/users';
+
+  static String orgRole(String id) => '/roles/org/$id';
+  static String orgRolePermissions(String roleId) =>
+      '/roles/org/$roleId/permissions';
+  static String orgRolePermission(String roleId, String permissionId) =>
+      '/roles/org/$roleId/permissions/$permissionId';
+  static String orgUserRoles(String orgId, String userId) =>
+      '/roles/org/user-roles/$orgId/$userId';
+  static String orgAssignRole(String orgId, String userId) =>
+      '/roles/org/assign/$orgId/$userId';
+  static String orgUnassignRole(String orgId, String userId, String roleId) =>
+      '/roles/org/unassign/$orgId/$userId/$roleId';
 }

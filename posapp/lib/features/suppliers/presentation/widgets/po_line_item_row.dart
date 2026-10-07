@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../inventory/domain/models/product.dart';
 
@@ -80,7 +81,7 @@ class PoLineItemRow extends StatelessWidget {
               Expanded(
                 child: PoMiniField(
                   controller: line.qtyCtrl,
-                  label: 'Qty',
+                  label: context.tr('pos.qty'),
                   numeric: true,
                   onChanged: (_) => onChanged(),
                 ),
@@ -90,7 +91,7 @@ class PoLineItemRow extends StatelessWidget {
                 flex: 2,
                 child: PoMiniField(
                   controller: line.costCtrl,
-                  label: 'Unit Cost (Rs.)',
+                  label: '${context.tr('pos.unit_price')} (Rs.)',
                   decimal: true,
                   onChanged: (_) => onChanged(),
                 ),
@@ -101,9 +102,9 @@ class PoLineItemRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
-                      'Total',
-                      style: TextStyle(fontSize: 10, color: AppColors.slate),
+                    Text(
+                      context.tr('common.total'),
+                      style: const TextStyle(fontSize: 10, color: AppColors.slate),
                     ),
                     Text(
                       'Rs. ${line.lineTotal.toStringAsFixed(0)}',

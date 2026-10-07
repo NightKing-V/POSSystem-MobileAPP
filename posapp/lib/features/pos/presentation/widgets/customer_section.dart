@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../customers/data/customers_repository.dart';
 
@@ -89,7 +90,7 @@ class _CustomerSectionState extends State<CustomerSection> {
               const Icon(Icons.person_outline_rounded, size: 15, color: AppColors.slate),
               const SizedBox(width: 5),
               Text(
-                'Customer',
+                context.tr('pos.customer'),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(fontSize: 12),
               ),
               const Spacer(),
@@ -114,7 +115,7 @@ class _CustomerSectionState extends State<CustomerSection> {
           Row(
             children: [
               _CustomerChip(
-                label: 'Walk-in',
+                label: context.tr('common.walk_in'),
                 selected: isWalkIn,
                 onTap: () {
                   widget.onCustomerSelected(null);
@@ -128,7 +129,7 @@ class _CustomerSectionState extends State<CustomerSection> {
                   controller: _ctrl,
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: 'Search customer name or phone…',
+                    hintText: context.tr('pos.search_customer_hint'),
                     isDense: true,
                     contentPadding:
                         const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -167,7 +168,7 @@ class _CustomerSectionState extends State<CustomerSection> {
                   ),
                   if (widget.selectedCustomer!.isLoyaltyMember)
                     Text(
-                      '${widget.selectedCustomer!.loyaltyPoints} pts',
+                      '${widget.selectedCustomer!.loyaltyPoints} ${context.tr('common.pts')}',
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.inkTeal),
                     ),
                 ],
@@ -194,7 +195,7 @@ class _CustomerSectionState extends State<CustomerSection> {
                     title: Text(c.fullName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     subtitle: Text(c.phone, style: const TextStyle(fontSize: 11, color: AppColors.slate)),
                     trailing: c.isLoyaltyMember
-                        ? Text('${c.loyaltyPoints} pts', style: const TextStyle(fontSize: 11, color: AppColors.inkTeal))
+                        ? Text('${c.loyaltyPoints} ${context.tr('common.pts')}', style: const TextStyle(fontSize: 11, color: AppColors.inkTeal))
                         : null,
                     onTap: () {
                       _ctrl.text = c.fullName;
@@ -264,7 +265,7 @@ class CustomerToggleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = selectedCustomer != null ? selectedCustomer!.fullName : 'Walk-in Customer';
+    final label = selectedCustomer != null ? selectedCustomer!.fullName : context.tr('common.walk_in_customer');
 
     return GestureDetector(
       onTap: onTap,

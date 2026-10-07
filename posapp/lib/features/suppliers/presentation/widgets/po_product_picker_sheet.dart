@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../inventory/data/inventory_repository.dart';
@@ -13,8 +14,8 @@ class PoProductPickerSheet extends StatefulWidget {
   static void show(BuildContext context, {required ValueChanged<Product> onSelect}) {
     showResponsiveModal(
       context: context,
-      title: 'Select Product',
-      subtitle: 'Add an item to the purchase order',
+      title: context.tr('suppliers.select_product'),
+      subtitle: context.tr('suppliers.add_item_to_po'),
       leadingIcon: const Icon(Icons.inventory_2_outlined, color: AppColors.inkTeal, size: 20),
       maxWidth: 560,
       maxHeightFactor: 0.85,
@@ -69,9 +70,9 @@ class _PoProductPickerSheetState extends State<PoProductPickerSheet> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: TextField(
             onChanged: (v) => setState(() => _query = v),
-            decoration: const InputDecoration(
-              hintText: 'Search products by name or SKU…',
-              prefixIcon: Icon(
+            decoration: InputDecoration(
+              hintText: context.tr('suppliers.search_products_hint'),
+              prefixIcon: const Icon(
                 Icons.search_rounded,
                 color: AppColors.slate,
                 size: 20,
@@ -83,12 +84,12 @@ class _PoProductPickerSheetState extends State<PoProductPickerSheet> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _filtered.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         child: Text(
-                          'No products found.',
-                          style: TextStyle(color: AppColors.slate, fontSize: 13),
+                          context.tr('inventory.no_products'),
+                          style: const TextStyle(color: AppColors.slate, fontSize: 13),
                         ),
                       ),
                     )

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../dashboard/presentation/widgets/billing_summary.dart';
 import '../../../inventory/presentation/widgets/product_grid.dart';
@@ -102,7 +103,7 @@ class NarrowCartLayout extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                'Cart',
+                context.tr('pos.cart'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium

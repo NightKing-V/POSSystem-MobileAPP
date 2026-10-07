@@ -37,8 +37,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _newPasswordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
 
-  static const _stepLabels = ['Email', 'Verify OTP', 'New Password'];
-
   int get _indicatorIndex {
     switch (_step) {
       case _ResetStep.email:
@@ -98,7 +96,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       setState(() {
-        _errorText = 'Please enter a valid email address.';
+        _errorText = context.tr('auth.invalid_email');
       });
       return;
     }
@@ -121,14 +119,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (response.isSuccess) {
       ApiHelper.showSuccessSnackBar(
         context,
-        'Verification code sent to $email',
+        context.tr('auth.otp_desc', args: {'email': email}),
       );
       _goTo(_ResetStep.otp);
     } else {
       setState(() {
         _errorText =
             response.errorMessage ??
-            'Failed to send OTP code. Please try again.';
+            context.tr('common.error');
       });
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
     }
@@ -149,14 +147,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           response.data?['session']?['access_token'] as String? ??
           token;
       _otpToken = acquiredToken;
-      ApiHelper.showSuccessSnackBar(context, 'Code verified successfully!');
+      ApiHelper.showSuccessSnackBar(context, context.tr('auth.otp_verified'));
       _goTo(_ResetStep.newPassword);
     } else {
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
-      throw Exception(
-        response.errorMessage ??
-            'Invalid OTP code. Please check and try again.',
-      );
+      final code = response.errorCode;
+      final msg = response.errorMessage ?? context.tr('auth.invalid_otp');
+      throw Exception(code != null && code.isNotEmpty ? '$code: $msg' : msg);
     }
   }
 
@@ -172,9 +169,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (!mounted) return;
 
     if (response.isSuccess) {
-      ApiHelper.showSuccessSnackBar(context, 'OTP resent to $email');
+      ApiHelper.showSuccessSnackBar(context, context.tr('auth.otp_desc', args: {'email': email}));
     } else {
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
+      final code = response.errorCode;
+      final msg = response.errorMessage ?? context.tr('common.error');
+      throw Exception(code != null && code.isNotEmpty ? '$code: $msg' : msg);
     }
   }
 
@@ -186,9 +186,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (newPassword.length < 8) {
       setState(() {
         _errorText = context.tr('auth.password_min_length');
-        if (_errorText == 'auth.password_min_length') {
-          _errorText = 'Password must be at least 8 characters long.';
-        }
       });
       return;
     }
@@ -196,9 +193,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (newPassword != confirmPassword) {
       setState(() {
         _errorText = context.tr('auth.passwords_dont_match');
-        if (_errorText == 'auth.passwords_dont_match') {
-          _errorText = 'Passwords do not match.';
-        }
       });
       return;
     }
@@ -219,13 +213,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     if (response.isSuccess) {
-      ApiHelper.showSuccessSnackBar(context, 'Password reset successfully!');
+      ApiHelper.showSuccessSnackBar(context, context.tr('auth.reset_success_title'));
       _goTo(_ResetStep.success);
     } else {
       setState(() {
         _errorText =
             response.errorMessage ??
-            'Failed to reset password. Please try again.';
+            context.tr('common.error');
       });
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
     }
@@ -233,6 +227,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final stepLabels = [
+      context.tr('auth.email'),
+      context.tr('auth.enter_otp'),
+      context.tr('auth.new_password'),
+    ];
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -270,7 +270,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         if (_step != _ResetStep.success) ...[
                           AuthStepIndicator(
                             currentIndex: _indicatorIndex,
-                            labels: _stepLabels,
+                            labels: stepLabels,
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -324,7 +324,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'Remembered your password? ',
+                          '${context.tr('auth.already_have_account')} ',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
@@ -400,7 +400,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 28),
         AuthTextField(
           label: context.tr('auth.email'),
-          hintText: 'you@business.com',
+          hintText: context.tr('auth.email_hint'),
           controller: _emailCtrl,
           keyboardType: TextInputType.emailAddress,
         ),
@@ -452,10 +452,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget _buildOtpStep() {
     return OtpVerificationView(
       email: _emailCtrl.text.trim(),
-      title: 'Verify OTP Code',
+      title: context.tr('auth.enter_otp'),
       subtitle:
-          'We sent a 6-digit verification code to\n${_emailCtrl.text.trim()}',
-      buttonLabel: 'Verify and Continue',
+          context.tr('auth.otp_desc', args: {'email': _emailCtrl.text.trim()}),
+      buttonLabel: context.tr('common.continue'),
       onVerify: _handleVerifyOtp,
       onResend: _handleResendOtp,
       onBack: _back,
@@ -495,7 +495,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Please enter and confirm your new password.',
+          context.tr('auth.set_new_password_desc'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 24),

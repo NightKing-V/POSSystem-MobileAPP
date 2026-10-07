@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../pos/billing/bill_calculator.dart';
 import '../../../pos/domain/models/cart_item.dart';
@@ -62,7 +63,10 @@ class BillingSummary extends StatelessWidget {
               const Icon(Icons.receipt_long_outlined, size: 13, color: AppColors.slate),
               const SizedBox(width: 5),
               Text(
-                '$totalItems ${totalItems == 1 ? 'item' : 'items'} in bill',
+                context.tr('pos.items_in_bill', args: {
+                  'count': totalItems,
+                  'items': totalItems == 1 ? context.tr('pos.item') : context.tr('pos.items'),
+                }),
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -74,14 +78,14 @@ class BillingSummary extends StatelessWidget {
 
           // Subtotal row
           _SummaryRow(
-            label: 'Subtotal',
+            label: context.tr('pos.subtotal'),
             value: 'Rs. ${sub.toStringAsFixed(2)}',
           ),
           const SizedBox(height: 7),
 
           // Bill-level discount (editable %)
           _EditableRow(
-            label: 'Bill Discount',
+            label: context.tr('pos.bill_discount'),
             controller: billDiscountController,
             onChanged: (v) =>
                 onBillDiscountChanged((double.tryParse(v) ?? 0.0).clamp(0.0, 100.0)),
@@ -94,7 +98,7 @@ class BillingSummary extends StatelessWidget {
 
           // Tax / VAT (editable %)
           _EditableRow(
-            label: 'Tax / VAT',
+            label: context.tr('pos.tax'),
             controller: taxController,
             onChanged: (v) =>
                 onTaxChanged((double.tryParse(v) ?? 0.0).clamp(0.0, 100.0)),
@@ -111,7 +115,7 @@ class BillingSummary extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Grand Total',
+                context.tr('pos.grand_total'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium

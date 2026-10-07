@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../inventory/data/inventory_repository.dart';
@@ -23,8 +24,8 @@ class LinkProductVendorView extends StatefulWidget {
   }) {
     return showResponsiveModal(
       context: context,
-      title: 'Link a Product',
-      subtitle: 'Assign supplier price and product code',
+      title: context.tr('suppliers.link_product_title'),
+      subtitle: context.tr('suppliers.link_products'),
       leadingIcon: const Icon(Icons.link_rounded, color: AppColors.inkTeal, size: 20),
       maxWidth: 560,
       maxHeightFactor: 0.85,
@@ -90,7 +91,7 @@ class _LinkProductVendorViewState extends State<LinkProductVendorView> {
     widget.onLinked();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${_selected!.name} linked to supplier.'),
+        content: Text(context.tr('common.created_success')),
         backgroundColor: AppColors.inkTeal,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -146,21 +147,21 @@ class _ProductPicker extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: TextField(
             onChanged: onSearchChanged,
-            decoration: const InputDecoration(
-              hintText: 'Search products by name or SKU…',
-              prefixIcon: Icon(Icons.search_rounded,
+            decoration: InputDecoration(
+              hintText: context.tr('common.search'),
+              prefixIcon: const Icon(Icons.search_rounded,
                   color: AppColors.slate, size: 20),
             ),
           ),
         ),
         Expanded(
           child: filtered.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
                     child: Text(
-                      'No products found.',
-                      style: TextStyle(color: AppColors.slate, fontSize: 13),
+                      context.tr('inventory.no_products'),
+                      style: const TextStyle(color: AppColors.slate, fontSize: 13),
                     ),
                   ),
                 )
@@ -211,7 +212,7 @@ class _LinkForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    final formFields = SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Form(
         key: formKey,
@@ -248,7 +249,7 @@ class _LinkForm extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const _Label('Vendor Unit Cost (Rs.) *'),
+            _Label(context.tr('suppliers.purchase_cost')),
             TextFormField(
               controller: costCtrl,
               keyboardType:
@@ -257,42 +258,63 @@ class _LinkForm extends StatelessWidget {
                 FilteringTextInputFormatter.allow(
                     RegExp(r'^\d*\.?\d{0,2}'))
               ],
-              decoration: const InputDecoration(
-                  hintText: '0.00', prefixText: 'Rs. '),
+              decoration: InputDecoration(
+                  hintText: context.tr('inventory.cost_hint'), prefixText: 'Rs. '),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Enter vendor cost';
-                if (double.tryParse(v) == null) return 'Invalid number';
+                if (v == null || v.trim().isEmpty) return context.tr('common.required');
+                if (double.tryParse(v) == null) return context.tr('common.error');
                 return null;
               },
             ),
             const SizedBox(height: 16),
-            const _Label("Vendor's Product Code"),
+            _Label(context.tr('suppliers.supplier_sku')),
             TextFormField(
               controller: codeCtrl,
-              decoration: const InputDecoration(
-                  hintText: 'e.g. LF-MILK-1L (optional)'),
-            ),
-            const SizedBox(height: 28),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: onLink,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.inkTeal,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text('Link Product',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
+              decoration: InputDecoration(
+                  hintText: '${context.tr('inventory.sku_hint')} (${context.tr('common.optional')})'),
             ),
           ],
         ),
       ),
+    );
+
+    final actionButton = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+        ),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: onLink,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.inkTeal,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Text(context.tr('suppliers.link_products'),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Flexible(child: formFields),
+        actionButton,
+      ],
     );
   }
 }

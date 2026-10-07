@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/suppliers_repository.dart';
 import '../../domain/models/supplier_mock_data.dart';
@@ -80,8 +81,8 @@ class _ReceivePurchaseOrderViewState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(allDone
-            ? '${widget.order.id} marked as Received.'
-            : '${widget.order.id} marked as Partially Received.'),
+            ? '${widget.order.id} - ${context.tr('suppliers.mark_received')}'
+            : '${widget.order.id} - ${context.tr('suppliers.mark_partial_received')}'),
         backgroundColor: allDone
             ? const Color(0xFF16A34A)
             : const Color(0xFFD97706),
@@ -115,35 +116,35 @@ class _ReceivePurchaseOrderViewState
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
               child: Row(
                 children: [
-                  const Expanded(
-                      child: Text('Product',
-                          style: TextStyle(
+                  Expanded(
+                      child: Text(context.tr('suppliers.product'),
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                               color: AppColors.slate))),
-                  const SizedBox(
+                  SizedBox(
                     width: 60,
-                    child: Text('Ordered',
+                    child: Text(context.tr('suppliers.ordered_qty'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                             color: AppColors.slate)),
                   ),
-                  const SizedBox(
+                  SizedBox(
                     width: 70,
-                    child: Text('Received',
+                    child: Text(context.tr('suppliers.received_qty'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                             color: AppColors.slate)),
                   ),
-                  const SizedBox(
+                  SizedBox(
                     width: 64,
-                    child: Text('Missing',
+                    child: Text(context.tr('suppliers.missing_qty'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                             color: AppColors.slate)),
@@ -189,7 +190,7 @@ class _ReceivePurchaseOrderViewState
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Receive Goods',
+            Text(context.tr('suppliers.receive_po'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -249,7 +250,7 @@ class _InfoCard extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 14)),
                 Text(
-                  'Expected: ${order.expectedDate.day}/${order.expectedDate.month}/${order.expectedDate.year}',
+                  '${context.tr('suppliers.expected_date')}: ${order.expectedDate.day}/${order.expectedDate.month}/${order.expectedDate.year}',
                   style: const TextStyle(
                       fontSize: 11, color: AppColors.slate),
                 ),
@@ -407,8 +408,8 @@ class _ConfirmBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = allReceived
-        ? 'Mark as Received'
-        : 'Mark as Partially Received';
+        ? context.tr('suppliers.mark_received')
+        : context.tr('suppliers.mark_partial_received');
     final color = allReceived
         ? const Color(0xFF16A34A)
         : const Color(0xFFD97706);

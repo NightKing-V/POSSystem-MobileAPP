@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../dashboard/presentation/pages/dashboard.dart';
@@ -134,6 +135,7 @@ class _SelectBusinessPageState extends State<SelectBusinessPage> {
                         category: org.category ?? 'Branch',
                         icon: Icons.storefront_outlined,
                         onTap: () {
+                          TokenStorage.setCurrentOrgId(org.id);
                           Navigator.of(context)
                               .push(
                                 MaterialPageRoute(

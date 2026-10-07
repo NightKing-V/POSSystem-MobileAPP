@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../../core/widgets/management_grid_table.dart';
@@ -118,8 +119,8 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
   void _openCreatePo() async {
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: 'New Purchase Order',
-      subtitle: 'Create a supplier purchase order',
+      title: context.tr('suppliers.create_po'),
+      subtitle: context.tr('suppliers.create_po_subtitle'),
       leadingIcon: const Icon(Icons.receipt_long_rounded,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 720,
@@ -134,7 +135,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
         po.status.toUpperCase() == 'PARTIALLY_RECEIVED') {
       showResponsiveModal<bool>(
         context: context,
-        title: 'Receive Goods',
+        title: context.tr('suppliers.receive_po'),
         subtitle: po.id,
         leadingIcon: const Icon(Icons.inventory_2_outlined,
             color: AppColors.inkTeal, size: 20),
@@ -177,10 +178,10 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
     final body = Column(
       children: [
         ManagementHeaderBar(
-          title: 'Purchase Orders',
-          subtitle: 'Stock Replenishment & Vendor Orders',
+          title: context.tr('suppliers.purchase_orders'),
+          subtitle: context.tr('suppliers.po_subtitle'),
           itemCountText:
-              '${list.length} ${list.length == 1 ? 'order' : 'orders'}',
+              context.tr('suppliers.count_orders', args: {'count': '${list.length}'}),
           filterWidget: _FilterBar(
             vendorFilter: _vendorFilter,
             statusFilter: _statusFilter,
@@ -192,7 +193,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
               _statusFilter = null;
             }),
           ),
-          actionLabel: 'Create PO',
+          actionLabel: context.tr('suppliers.create_po'),
           actionIcon: Icons.add,
           onActionTap: _openCreatePo,
         ),
@@ -200,8 +201,8 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
           child: ManagementGridTable<PurchaseOrderProps>(
             items: list,
             isLoading: _isLoading,
-            emptyTitle: 'No purchase orders',
-            emptySubtitle: 'Create your first PO to track stock orders from vendors.',
+            emptyTitle: context.tr('suppliers.no_po'),
+            emptySubtitle: context.tr('suppliers.no_po_hint'),
             emptyIcon: Icons.receipt_long_outlined,
             enablePagination: true,
             rowsPerPage: 10,
@@ -218,7 +219,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
             onView: (po) => _handlePoTap(po),
             columns: [
               ManagementTableColumn<PurchaseOrderProps>(
-                label: 'PO Number',
+                label: context.tr('suppliers.po_number'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (po, _) => Row(
@@ -248,7 +249,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                 ),
               ),
               ManagementTableColumn<PurchaseOrderProps>(
-                label: 'Supplier / Vendor',
+                label: context.tr('suppliers.supplier_name_header'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (po, _) => Text(
@@ -262,7 +263,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                 ),
               ),
               ManagementTableColumn<PurchaseOrderProps>(
-                label: 'Expected Date',
+                label: context.tr('suppliers.expected_date'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (po, _) => Text(
@@ -271,16 +272,16 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                 ),
               ),
               ManagementTableColumn<PurchaseOrderProps>(
-                label: 'Items',
+                label: context.tr('pos.items'),
                 flex: 1,
                 isSortable: true,
                 cellBuilder: (po, _) => Text(
-                  '${po.items.length} ${po.items.length == 1 ? 'item' : 'items'}',
+                  '${po.items.length} ${po.items.length == 1 ? context.tr('pos.item') : context.tr('pos.items')}',
                   style: const TextStyle(fontSize: 12.5, color: AppColors.slate),
                 ),
               ),
               ManagementTableColumn<PurchaseOrderProps>(
-                label: 'Total Amount',
+                label: context.tr('suppliers.order_total'),
                 flex: 2,
                 isSortable: true,
                 alignment: Alignment.centerRight,
@@ -294,7 +295,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
                 ),
               ),
               ManagementTableColumn<PurchaseOrderProps>(
-                label: 'Status',
+                label: context.tr('common.status'),
                 width: 130,
                 isSortable: true,
                 cellBuilder: (po, _) =>
@@ -313,7 +314,7 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
 
     final fab = ManagementHeaderBar.buildFab(
       context,
-      label: 'Create PO',
+      label: context.tr('suppliers.create_po'),
       onTap: _openCreatePo,
     );
 
@@ -335,12 +336,12 @@ class _PurchaseOrdersListViewState extends State<PurchaseOrdersListView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Purchase Orders',
+            Text(context.tr('suppliers.purchase_orders'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${list.length} orders',
+            Text(context.tr('suppliers.count_orders', args: {'count': '${list.length}'}),
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -373,6 +374,17 @@ class _FilterBar extends StatelessWidget {
 
   bool get _hasFilter => vendorFilter != null || statusFilter != null;
 
+  String _getLocalizedStatusName(BuildContext context, String? code) {
+    switch (code?.toUpperCase()) {
+      case 'DRAFT': return context.tr('suppliers.status_draft');
+      case 'SENT': return context.tr('suppliers.status_sent');
+      case 'PARTIAL': return context.tr('suppliers.status_partial');
+      case 'RECEIVED': return context.tr('suppliers.status_received');
+      case 'CANCELLED': return context.tr('suppliers.status_cancelled');
+      default: return code ?? context.tr('suppliers.all_statuses');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     String? selectedVendorName;
@@ -387,7 +399,7 @@ class _FilterBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _FilterDropdown<String>(
-            label: selectedVendorName ?? 'All Vendors',
+            label: selectedVendorName ?? context.tr('suppliers.all_vendors'),
             items: suppliers
                 .map((v) => DropdownMenuItem(value: v.id, child: Text(v.name)))
                 .toList(),
@@ -396,13 +408,15 @@ class _FilterBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _FilterDropdown<String>(
-            label: statusFilter ?? 'All Statuses',
-            items: const [
-              DropdownMenuItem(value: 'DRAFT', child: Text('Draft')),
-              DropdownMenuItem(value: 'SENT', child: Text('Sent')),
-              DropdownMenuItem(value: 'PARTIAL', child: Text('Partial')),
-              DropdownMenuItem(value: 'RECEIVED', child: Text('Received')),
-              DropdownMenuItem(value: 'CANCELLED', child: Text('Cancelled')),
+            label: statusFilter != null
+                ? _getLocalizedStatusName(context, statusFilter)
+                : context.tr('suppliers.all_statuses'),
+            items: [
+              DropdownMenuItem(value: 'DRAFT', child: Text(context.tr('suppliers.status_draft'))),
+              DropdownMenuItem(value: 'SENT', child: Text(context.tr('suppliers.status_sent'))),
+              DropdownMenuItem(value: 'PARTIAL', child: Text(context.tr('suppliers.status_partial'))),
+              DropdownMenuItem(value: 'RECEIVED', child: Text(context.tr('suppliers.status_received'))),
+              DropdownMenuItem(value: 'CANCELLED', child: Text(context.tr('suppliers.status_cancelled'))),
             ],
             value: statusFilter,
             onChanged: onStatusChanged,
@@ -420,12 +434,12 @@ class _FilterBar extends StatelessWidget {
                   border: Border.all(
                       color: AppColors.error.withValues(alpha: 0.3), width: 1),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.close_rounded, size: 13, color: AppColors.error),
-                    SizedBox(width: 4),
-                    Text('Clear',
-                        style: TextStyle(
+                    const Icon(Icons.close_rounded, size: 13, color: AppColors.error),
+                    const SizedBox(width: 4),
+                    Text(context.tr('common.clear'),
+                        style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.error)),
@@ -477,7 +491,7 @@ class _FilterDropdown<T> extends StatelessWidget {
             DropdownMenuItem<T>(
               value: null,
               child: Text(
-                label.startsWith('All') ? label : 'All',
+                label.startsWith('All') || label.startsWith('සියලු') || label.startsWith('அனைத்து') ? label : context.tr('common.all'),
                 style: const TextStyle(color: AppColors.slate),
               ),
             ),
@@ -540,7 +554,7 @@ class _PoListTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${po.expectedDate.day}/${po.expectedDate.month}/${po.expectedDate.year}  ·  ${po.items.length} ${po.items.length == 1 ? 'item' : 'items'}',
+                '${po.expectedDate.day}/${po.expectedDate.month}/${po.expectedDate.year}  ·  ${po.items.length} ${po.items.length == 1 ? context.tr('pos.item') : context.tr('pos.items')}',
                 style: const TextStyle(fontSize: 11, color: AppColors.slate),
               ),
               const SizedBox(height: 6),
@@ -550,9 +564,10 @@ class _PoListTile extends StatelessWidget {
                   Text(
                     'Rs. ${po.totalAmount.toStringAsFixed(2)}',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.5,
-                        color: AppColors.inkTeal),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.5,
+                      color: AppColors.inkTeal,
+                    ),
                   ),
                 ],
               ),

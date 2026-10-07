@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// Search bar for the product panel.
@@ -29,7 +30,7 @@ class ProductSearchBar extends StatelessWidget {
             controller: controller,
             onChanged: onChanged,
             decoration: InputDecoration(
-              hintText: 'Search by name or SKU…',
+              hintText: context.tr('pos.search_by_name_or_sku'),
               prefixIcon: const Icon(Icons.search_rounded, color: AppColors.slate, size: 20),
               suffixIcon: controller.text.isNotEmpty
                   ? IconButton(

@@ -8,9 +8,11 @@ import 'token_storage_stub.dart'
 class TokenStorage {
   static const String _kAccessTokenKey = 'kivi_access_token';
   static const String _kCurrentUserKey = 'kivi_current_user';
+  static const String _kCurrentOrgIdKey = 'kivi_current_org_id';
 
   static String? _accessToken;
   static Map<String, dynamic>? _currentUser;
+  static String? _currentOrgId;
   static bool _isInitialized = false;
 
   /// Initialize TokenStorage by loading saved token & user metadata from disk / localStorage
@@ -18,6 +20,7 @@ class TokenStorage {
     if (_isInitialized) return;
     try {
       _accessToken = await PlatformStorage.getItem(_kAccessTokenKey);
+      _currentOrgId = await PlatformStorage.getItem(_kCurrentOrgIdKey);
       final userJson = await PlatformStorage.getItem(_kCurrentUserKey);
       if (userJson != null && userJson.isNotEmpty) {
         _currentUser = json.decode(userJson) as Map<String, dynamic>?;
@@ -57,13 +60,26 @@ class TokenStorage {
     return _currentUser;
   }
 
+  /// Save current active organization ID
+  static Future<void> setCurrentOrgId(String orgId) async {
+    _currentOrgId = orgId;
+    try {
+      await PlatformStorage.setItem(_kCurrentOrgIdKey, orgId);
+    } catch (_) {}
+  }
+
+  /// Retrieve current active organization ID
+  static String? get currentOrgId => _currentOrgId;
+
   /// Clear token and user on logout
   static Future<void> clear() async {
     _accessToken = null;
     _currentUser = null;
+    _currentOrgId = null;
     try {
       await PlatformStorage.removeItem(_kAccessTokenKey);
       await PlatformStorage.removeItem(_kCurrentUserKey);
+      await PlatformStorage.removeItem(_kCurrentOrgIdKey);
     } catch (_) {}
   }
 }

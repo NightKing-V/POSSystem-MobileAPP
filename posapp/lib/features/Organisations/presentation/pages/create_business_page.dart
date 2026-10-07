@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/create_business_form.dart';
 
@@ -19,7 +20,7 @@ class CreateBusinessPage extends StatelessWidget {
         ),
         titleSpacing: 0,
         title: Text(
-          'Create New Business',
+          context.tr('orgs.create_new_business'),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),

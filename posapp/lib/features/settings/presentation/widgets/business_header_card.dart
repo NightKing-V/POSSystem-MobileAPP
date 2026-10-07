@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// Top profile card displaying active store avatar, business title, and admin badge.
@@ -46,7 +47,7 @@ class BusinessHeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  businessName.isNotEmpty ? businessName : 'Business',
+                  businessName.isNotEmpty ? businessName : context.tr('orgs.current_business'),
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -65,7 +66,7 @@ class BusinessHeaderCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Store Admin · Active Session',
+                      context.tr('dashboard.store_admin_active_session'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontSize: 13,
                             color: AppColors.slate,

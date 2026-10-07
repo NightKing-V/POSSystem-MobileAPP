@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/inventory_repository.dart';
 import '../../domain/category_repository.dart';
@@ -63,9 +64,9 @@ class _AddProductTabState extends State<AddProductTab> {
         '8901030${(100000 + (DateTime.now().millisecond * 9)).toString().substring(0, 6)}';
     setState(() => _skuCtrl.text = code);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Barcode generated successfully!'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(context.tr('common.success')),
+        duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -89,11 +90,11 @@ class _AddProductTabState extends State<AddProductTab> {
 
       if (res.isSuccess) {
         ApiHelper.showSuccessSnackBar(
-            context, '${_nameCtrl.text} added to inventory!');
+            context, context.tr('common.created_success'));
         Navigator.of(context).pop(true);
       } else {
         ApiHelper.showErrorSnackBar(
-            context, res.errorMessage ?? 'Failed to add product.');
+            context, res.errorMessage ?? context.tr('common.error'));
       }
     }
   }
@@ -129,7 +130,7 @@ class _AddProductTabState extends State<AddProductTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Product details',
+                    context.tr('inventory.product_details'),
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -138,29 +139,29 @@ class _AddProductTabState extends State<AddProductTab> {
                   const SizedBox(height: 20),
 
                   // Name
-                  _buildLabel('Product Name *'),
+                  _buildLabel(context.tr('inventory.product_name')),
                   TextFormField(
                     controller: _nameCtrl,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. Fresh Milk 1L',
+                    decoration: InputDecoration(
+                      hintText: context.tr('inventory.product_name_hint'),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Please enter product name'
+                        ? context.tr('inventory.product_name_required')
                         : null,
                   ),
                   const SizedBox(height: 16),
 
                   // SKU + barcode
-                  _buildLabel('SKU / Barcode'),
+                  _buildLabel(context.tr('inventory.barcode')),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _skuCtrl,
-                          decoration: const InputDecoration(
-                            hintText: 'Enter barcode or scan',
+                          decoration: InputDecoration(
+                            hintText: context.tr('inventory.barcode_hint'),
                           ),
                         ),
                       ),
@@ -192,12 +193,12 @@ class _AddProductTabState extends State<AddProductTab> {
                   // Category dropdown + new category link
                   Row(
                     children: [
-                      _buildLabel('Category *'),
+                      _buildLabel(context.tr('inventory.category')),
                       const Spacer(),
                       GestureDetector(
                         onTap: widget.onNewCategoryTap,
                         child: Text(
-                          '+ New category',
+                          '+ ${context.tr('inventory.add_category')}',
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium
@@ -212,7 +213,7 @@ class _AddProductTabState extends State<AddProductTab> {
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCategoryId,
-                    hint: const Text('Select a category'),
+                    hint: Text(context.tr('inventory.select_category')),
                     decoration: const InputDecoration(
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -227,7 +228,7 @@ class _AddProductTabState extends State<AddProductTab> {
                         .toList(),
                     onChanged: (v) => setState(() => _selectedCategoryId = v),
                     validator: (v) => (v == null || v.isEmpty)
-                        ? 'Please select a category'
+                        ? context.tr('inventory.select_category')
                         : null,
                   ),
                   const SizedBox(height: 20),
@@ -236,7 +237,7 @@ class _AddProductTabState extends State<AddProductTab> {
                   const SizedBox(height: 20),
 
                   Text(
-                    'Pricing & Stock',
+                    context.tr('inventory.title'),
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -251,14 +252,14 @@ class _AddProductTabState extends State<AddProductTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Cost Price (Rs.)'),
+                            _buildLabel(context.tr('inventory.cost')),
                             TextFormField(
                               controller: _costCtrl,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
-                              decoration: const InputDecoration(
-                                hintText: '0.00',
+                              decoration: InputDecoration(
+                                hintText: context.tr('inventory.cost_hint'),
                                 prefixText: 'Rs. ',
                               ),
                             ),
@@ -270,22 +271,22 @@ class _AddProductTabState extends State<AddProductTab> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Selling Price *'),
+                            _buildLabel(context.tr('inventory.price')),
                             TextFormField(
                               controller: _priceCtrl,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
-                              decoration: const InputDecoration(
-                                hintText: '0.00',
+                              decoration: InputDecoration(
+                                hintText: context.tr('inventory.price_hint'),
                                 prefixText: 'Rs. ',
                               ),
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) {
-                                  return 'Required';
+                                  return context.tr('inventory.price_required');
                                 }
                                 if (double.tryParse(v) == null) {
-                                  return 'Invalid number';
+                                  return context.tr('common.error');
                                 }
                                 return null;
                               },
@@ -298,17 +299,17 @@ class _AddProductTabState extends State<AddProductTab> {
                   const SizedBox(height: 16),
 
                   // Stock
-                  _buildLabel('Initial Stock Level *'),
+                  _buildLabel(context.tr('inventory.stock_qty')),
                   TextFormField(
                     controller: _stockCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(hintText: '0'),
+                    decoration: InputDecoration(hintText: context.tr('inventory.stock_qty_hint')),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
-                        return 'Please enter initial stock';
+                        return context.tr('common.required');
                       }
                       if (int.tryParse(v) == null) {
-                        return 'Invalid integer';
+                        return context.tr('common.error');
                       }
                       return null;
                     },
@@ -330,7 +331,7 @@ class _AddProductTabState extends State<AddProductTab> {
                         ),
                       ),
                       child: Text(
-                        'Add Product to Inventory',
+                        context.tr('inventory.add_product'),
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: Colors.white,

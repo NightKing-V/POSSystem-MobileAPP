@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/api/api_helper.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/auth_repository.dart';
 import '../../../Organisations/presentation/pages/select_business.dart';
 import '../widgets/auth_text_field.dart';
@@ -9,13 +10,7 @@ import '../widgets/auth_step_indicator.dart';
 import '../widgets/otp_verification_view.dart';
 import './login_page.dart';
 
-/// Multi-step sign up flow. UI only — no auth wiring yet.
-///
-/// Deliberately a single route: each step swaps the *content* of one
-/// card via [AnimatedSwitcher] instead of pushing a new page. This is
-/// the same pattern Google/YouTube onboarding uses — it keeps state
-/// (typed values, scroll position, card chrome) alive across steps and
-/// avoids a navigation stack the user has to fight to back out of.
+/// Multi-step user registration flow.
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -23,51 +18,46 @@ class SignupPage extends StatefulWidget {
   State<SignupPage> createState() => _SignupPageState();
 }
 
-enum _Step { credentials, phone, businessType, businessName, creating, verify }
+enum _Step { account, security, creating, verify }
 
 class _SignupData {
+  String fullname = '';
   String email = '';
-  String password = '';
   String phone = '';
-  String? businessType;
-  String businessName = '';
+  String password = '';
 }
 
 class _SignupPageState extends State<SignupPage> {
-  _Step _step = _Step.credentials;
+  _Step _step = _Step.account;
   int _direction = 1; // 1 = forward (slide in from right), -1 = backward
   String? _errorText;
 
   final _data = _SignupData();
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _businessNameCtrl = TextEditingController();
 
   static const _stepOrder = [
-    _Step.credentials,
-    _Step.phone,
-    _Step.businessType,
-    _Step.businessName,
+    _Step.account,
+    _Step.security,
     _Step.creating,
     _Step.verify,
   ];
 
-  static const _stepLabels = ['Account', 'Phone', 'Business', 'Details', 'Verify'];
-
   int get _indicatorIndex {
     final i = _stepOrder.indexOf(_step);
-    return i >= 4 ? 4 : i; // creating + verify both light up the last dot
+    return i >= 2 ? 2 : i; // creating and verify light up the last step dot
   }
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _phoneCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
-    _phoneCtrl.dispose();
-    _businessNameCtrl.dispose();
     super.dispose();
   }
 
@@ -90,53 +80,34 @@ class _SignupPageState extends State<SignupPage> {
 
   void _next() {
     switch (_step) {
-      case _Step.credentials:
-        if (!_emailCtrl.text.contains('@') || _emailCtrl.text.trim().isEmpty) {
-          setState(() => _errorText = 'Enter a valid email address');
+      case _Step.account:
+        final email = _emailCtrl.text.trim();
+        if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+          setState(() => _errorText = context.tr('auth.invalid_email'));
           return;
         }
-        if (_passwordCtrl.text.length < 6) {
-          setState(() => _errorText = 'Password must be at least 6 characters');
+        _data.fullname = _nameCtrl.text.trim();
+        _data.email = email;
+        _data.phone = _phoneCtrl.text.trim();
+        _goTo(_Step.security);
+        break;
+
+      case _Step.security:
+        if (_passwordCtrl.text.length < 8) {
+          setState(() => _errorText = context.tr('auth.password_min_length'));
           return;
         }
         if (_passwordCtrl.text != _confirmCtrl.text) {
-          setState(() => _errorText = 'Passwords do not match');
+          setState(() => _errorText = context.tr('auth.passwords_dont_match'));
           return;
         }
-        _data.email = _emailCtrl.text.trim();
         _data.password = _passwordCtrl.text;
-        _goTo(_Step.phone);
-        break;
-
-      case _Step.phone:
-        if (_phoneCtrl.text.trim().length < 9) {
-          setState(() => _errorText = 'Enter a valid phone number');
-          return;
-        }
-        _data.phone = _phoneCtrl.text.trim();
-        _goTo(_Step.businessType);
-        break;
-
-      case _Step.businessType:
-        if (_data.businessType == null) {
-          setState(() => _errorText = 'Choose a business type');
-          return;
-        }
-        _goTo(_Step.businessName);
-        break;
-
-      case _Step.businessName:
-        if (_businessNameCtrl.text.trim().isEmpty) {
-          setState(() => _errorText = 'Enter your business name');
-          return;
-        }
-        _data.businessName = _businessNameCtrl.text.trim();
         _goTo(_Step.creating);
-        _createBusiness();
+        _registerUser();
         break;
 
       case _Step.creating:
-        break; // no-op, waiting on _createBusiness()
+        break; // no-op, waiting on _registerUser()
 
       case _Step.verify:
         Navigator.of(context).pushReplacement(
@@ -146,14 +117,13 @@ class _SignupPageState extends State<SignupPage> {
     }
   }
 
-  Future<void> _createBusiness() async {
+  Future<void> _registerUser() async {
     final authRepo = AuthRepository();
     final dto = RegisterDto(
       email: _data.email,
       password: _data.password,
-      phone: _data.phone,
-      businessName: _data.businessName,
-      businessType: _data.businessType,
+      fullname: _data.fullname.isNotEmpty ? _data.fullname : null,
+      phone: _data.phone.isNotEmpty ? _data.phone : null,
     );
 
     final response = await authRepo.register(dto);
@@ -161,19 +131,28 @@ class _SignupPageState extends State<SignupPage> {
     if (!mounted || _step != _Step.creating) return;
 
     if (response.isSuccess) {
-      ApiHelper.showSuccessSnackBar(context, 'Account created! Please verify your email.');
+      ApiHelper.showSuccessSnackBar(
+        context,
+        context.tr('auth.otp_desc', args: {'email': _data.email}),
+      );
       _goTo(_Step.verify);
     } else {
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
-      _goTo(_Step.businessName);
+      _goTo(_Step.security, direction: -1);
       setState(() {
-        _errorText = response.errorMessage ?? 'Registration failed. Please try again.';
+        _errorText = response.errorMessage ?? context.tr('common.error');
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final stepLabels = [
+      context.tr('auth.create_account'),
+      context.tr('auth.password'),
+      context.tr('auth.verify_email'),
+    ];
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -209,7 +188,10 @@ class _SignupPageState extends State<SignupPage> {
                         const AuthWordmark(),
                         const SizedBox(height: 24),
                         if (_step != _Step.creating && _step != _Step.verify) ...[
-                          AuthStepIndicator(currentIndex: _indicatorIndex, labels: _stepLabels),
+                          AuthStepIndicator(
+                            currentIndex: _indicatorIndex,
+                            labels: stepLabels,
+                          ),
                           const SizedBox(height: 24),
                         ],
                         ClipRect(
@@ -220,7 +202,10 @@ class _SignupPageState extends State<SignupPage> {
                             transitionBuilder: (child, animation) {
                               final isIncoming = child.key == ValueKey(_step);
                               final offsetAnim = Tween<Offset>(
-                                begin: Offset(isIncoming ? _direction * 0.15 : -_direction * 0.15, 0),
+                                begin: Offset(
+                                  isIncoming ? _direction * 0.15 : -_direction * 0.15,
+                                  0,
+                                ),
                                 end: Offset.zero,
                               ).animate(animation);
                               return ClipRect(
@@ -244,18 +229,21 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  if (_step == _Step.credentials)
+                  if (_step == _Step.account)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Already have an account?', style: Theme.of(context).textTheme.bodyMedium),
+                        Text(
+                          context.tr('auth.already_have_account'),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.inkTeal,
                             textStyle: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          child: const Text('Sign in'),
+                          child: Text(context.tr('auth.login')),
                         ),
                       ],
                     ),
@@ -270,71 +258,73 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget _buildStepContent() {
     switch (_step) {
-      case _Step.credentials:
+      case _Step.account:
         return _StepShell(
-          title: 'Create your account',
-          subtitle: 'to start tracking sales',
+          title: context.tr('auth.create_account'),
+          subtitle: context.tr('auth.sign_in_to_continue'),
           errorText: _errorText,
           onBack: _back,
           onContinue: _next,
           showBack: true,
+          continueLabel: context.tr('common.continue'),
           fields: [
-            AuthTextField(label: 'Email', hintText: 'you@business.com', controller: _emailCtrl, keyboardType: TextInputType.emailAddress),
+            AuthTextField(
+              label: '${context.tr('auth.full_name')} (${context.tr('common.optional')})',
+              hintText: context.tr('auth.full_name_hint'),
+              controller: _nameCtrl,
+              keyboardType: TextInputType.name,
+            ),
             const SizedBox(height: 20),
-            AuthTextField(label: 'Password', obscureText: true, controller: _passwordCtrl),
+            AuthTextField(
+              label: context.tr('auth.email'),
+              hintText: context.tr('auth.email_hint'),
+              controller: _emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+            ),
             const SizedBox(height: 20),
-            AuthTextField(label: 'Confirm password', obscureText: true, controller: _confirmCtrl),
-          ],
-        );
-
-      case _Step.phone:
-        return _StepShell(
-          title: 'What\'s your phone number?',
-          subtitle: 'We\'ll use this for account recovery and receipts',
-          errorText: _errorText,
-          onBack: _back,
-          onContinue: _next,
-          fields: [
-            AuthTextField(label: 'Phone', hintText: '07X XXX XXXX', controller: _phoneCtrl, keyboardType: TextInputType.phone),
-          ],
-        );
-
-      case _Step.businessType:
-        return _StepShell(
-          title: 'What kind of business is it?',
-          subtitle: 'This helps us tailor KIVI to how you sell',
-          errorText: _errorText,
-          onBack: _back,
-          onContinue: _next,
-          fields: [
-            _BusinessTypeSelector(
-              selected: _data.businessType,
-              onSelected: (v) => setState(() {
-                _data.businessType = v;
-                _errorText = null;
-              }),
+            AuthTextField(
+              label: '${context.tr('auth.phone')} (${context.tr('common.optional')})',
+              hintText: context.tr('auth.phone_hint'),
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
             ),
           ],
         );
 
-      case _Step.businessName:
+      case _Step.security:
         return _StepShell(
-          title: 'Name your business',
-          subtitle: 'This is what appears on receipts and reports',
+          title: context.tr('auth.set_new_password_title'),
+          subtitle: context.tr('auth.password_min_length'),
           errorText: _errorText,
           onBack: _back,
           onContinue: _next,
-          continueLabel: 'Create account',
+          continueLabel: context.tr('auth.create_account'),
           fields: [
-            AuthTextField(label: 'Business name', hintText: 'e.g. Maya Boutique', controller: _businessNameCtrl),
+            AuthTextField(
+              label: context.tr('auth.password'),
+              hintText: context.tr('auth.password_min_length'),
+              obscureText: true,
+              controller: _passwordCtrl,
+            ),
+            const SizedBox(height: 20),
+            AuthTextField(
+              label: context.tr('auth.confirm_new_password'),
+              hintText: context.tr('auth.password_hint'),
+              obscureText: true,
+              controller: _confirmCtrl,
+            ),
           ],
         );
 
       case _Step.creating:
-        return const _CreatingBusinessView();
+        return const _CreatingAccountView();
 
       case _Step.verify:
-        return _VerifyEmailView(email: _data.email, onContinue: _next);
+        return _VerifyEmailView(
+          email: _data.email,
+          data: _data,
+          onContinue: _next,
+        );
     }
   }
 }
@@ -427,94 +417,8 @@ class _StepShell extends StatelessWidget {
   }
 }
 
-class _BusinessTypeOption {
-  const _BusinessTypeOption(this.id, this.label, this.icon);
-  final String id;
-  final String label;
-  final IconData icon;
-}
-
-const _businessTypeOptions = [
-  _BusinessTypeOption('retail', 'Retail store', Icons.storefront_outlined),
-  _BusinessTypeOption('restaurant', 'Restaurant / cafe', Icons.restaurant_outlined),
-  _BusinessTypeOption('service', 'Service business', Icons.handyman_outlined),
-  _BusinessTypeOption('other', 'Other', Icons.apps_outlined),
-];
-
-class _BusinessTypeSelector extends StatelessWidget {
-  const _BusinessTypeSelector({required this.selected, required this.onSelected});
-
-  final String? selected;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final option in _businessTypeOptions) ...[
-          _BusinessTypeCard(
-            option: option,
-            selected: option.id == selected,
-            onTap: () => onSelected(option.id),
-          ),
-          if (option != _businessTypeOptions.last) const SizedBox(height: 12),
-        ],
-      ],
-    );
-  }
-}
-
-class _BusinessTypeCard extends StatelessWidget {
-  const _BusinessTypeCard({required this.option, required this.selected, required this.onTap});
-
-  final _BusinessTypeOption option;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.inkTeal.withValues(alpha: 0.06) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? AppColors.inkTeal : AppColors.hairline,
-            width: selected ? 1.6 : 1.2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(option.icon, size: 20, color: selected ? AppColors.inkTeal : AppColors.slate),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                option.label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: AppColors.ink,
-                ),
-              ),
-            ),
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: selected ? 1 : 0,
-              child: const Icon(Icons.check_circle, size: 20, color: AppColors.inkTeal),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CreatingBusinessView extends StatelessWidget {
-  const _CreatingBusinessView();
+class _CreatingAccountView extends StatelessWidget {
+  const _CreatingAccountView();
 
   @override
   Widget build(BuildContext context) {
@@ -529,10 +433,10 @@ class _CreatingBusinessView extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.inkTeal),
           ),
           const SizedBox(height: 20),
-          Text('Setting up your business…', style: Theme.of(context).textTheme.titleMedium),
+          Text(context.tr('common.loading'), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
           Text(
-            'This only takes a moment',
+            context.tr('auth.sign_in_to_continue'),
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -543,9 +447,14 @@ class _CreatingBusinessView extends StatelessWidget {
 }
 
 class _VerifyEmailView extends StatelessWidget {
-  const _VerifyEmailView({required this.email, required this.onContinue});
+  const _VerifyEmailView({
+    required this.email,
+    required this.data,
+    required this.onContinue,
+  });
 
   final String email;
+  final _SignupData data;
   final VoidCallback onContinue;
 
   Future<void> _handleVerify(BuildContext context, String token) async {
@@ -557,13 +466,41 @@ class _VerifyEmailView extends StatelessWidget {
     if (!context.mounted) return;
 
     if (response.isSuccess) {
-      ApiHelper.showSuccessSnackBar(context, 'Email verified successfully!');
+      ApiHelper.showSuccessSnackBar(context, context.tr('auth.otp_verified'));
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const SelectBusinessPage()),
       );
     } else {
       ApiHelper.showErrorSnackBar(context, response.errorMessage);
-      throw Exception(response.errorMessage ?? 'Verification failed. Please try again.');
+      final code = response.errorCode;
+      final msg = response.errorMessage ?? context.tr('common.error');
+      throw Exception(code != null && code.isNotEmpty ? '$code: $msg' : msg);
+    }
+  }
+
+  Future<void> _handleResend(BuildContext context) async {
+    final authRepo = AuthRepository();
+    final dto = RegisterDto(
+      email: data.email,
+      password: data.password,
+      fullname: data.fullname.isNotEmpty ? data.fullname : null,
+      phone: data.phone.isNotEmpty ? data.phone : null,
+    );
+
+    final response = await authRepo.register(dto);
+
+    if (!context.mounted) return;
+
+    if (response.isSuccess) {
+      ApiHelper.showSuccessSnackBar(
+        context,
+        context.tr('auth.otp_desc', args: {'email': email}),
+      );
+    } else {
+      ApiHelper.showErrorSnackBar(context, response.errorMessage);
+      final code = response.errorCode;
+      final msg = response.errorMessage ?? context.tr('common.error');
+      throw Exception(code != null && code.isNotEmpty ? '$code: $msg' : msg);
     }
   }
 
@@ -571,15 +508,11 @@ class _VerifyEmailView extends StatelessWidget {
   Widget build(BuildContext context) {
     return OtpVerificationView(
       email: email,
-      title: 'Verify your email',
-      subtitle: 'We sent a 6-digit code to\n$email',
-      buttonLabel: 'Verify and Continue',
+      title: context.tr('auth.verify_email'),
+      subtitle: context.tr('auth.otp_desc', args: {'email': email}),
+      buttonLabel: context.tr('auth.verify_email'),
       onVerify: (token) => _handleVerify(context, token),
-      onResend: () async {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP resent to your email')),
-        );
-      },
+      onResend: () => _handleResend(context),
     );
   }
 }

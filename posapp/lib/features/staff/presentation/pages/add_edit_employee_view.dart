@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
+import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/staff_repository.dart';
@@ -23,13 +24,20 @@ class AddEditEmployeeView extends StatefulWidget {
 class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
   final _staffRepo = StaffRepository();
   final _formKey = GlobalKey<FormState>();
+
   late final TextEditingController _nameCtrl;
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _passwordCtrl;
+
+  String? _selectedRoleId;
+  List<OrgRoleProps> _availableRoles = [];
+  bool _isLoadingRoles = false;
   bool _isLoading = false;
 
   bool get _isEditing => widget.employee != null;
+
+  String? get _effectiveOrgId => widget.orgId ?? TokenStorage.currentOrgId;
 
   @override
   void initState() {
@@ -39,6 +47,30 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
     _emailCtrl = TextEditingController(text: e?.email ?? '');
     _phoneCtrl = TextEditingController(text: e?.phone ?? '');
     _passwordCtrl = TextEditingController();
+    _selectedRoleId = e?.roleId;
+
+    _loadRoles();
+  }
+
+  Future<void> _loadRoles() async {
+    setState(() => _isLoadingRoles = true);
+    final res = await _staffRepo.fetchOrgRoles(orgId: _effectiveOrgId);
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingRoles = false;
+      if (res.isSuccess && res.data != null) {
+        _availableRoles = res.data!;
+        if (_selectedRoleId == null && _availableRoles.isNotEmpty) {
+          final matched = _availableRoles.where(
+            (r) => r.name.toLowerCase() == (widget.employee?.role ?? '').toLowerCase(),
+          );
+          if (matched.isNotEmpty) {
+            _selectedRoleId = matched.first.id;
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -59,24 +91,40 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
-      password: _passwordCtrl.text.isNotEmpty ? _passwordCtrl.text : 'Password@123',
+      password:
+          _passwordCtrl.text.isNotEmpty ? _passwordCtrl.text : 'Password@123',
+      roleId: _selectedRoleId,
     );
 
     final res = await _staffRepo.createStaffUser(dto);
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
     if (res.isSuccess) {
+      // If editing and role was selected, assign the role explicitly
+      if (_isEditing &&
+          _selectedRoleId != null &&
+          _effectiveOrgId != null &&
+          widget.employee != null) {
+        await _staffRepo.assignOrgRole(
+          orgId: _effectiveOrgId!,
+          userId: widget.employee!.id,
+          roleId: _selectedRoleId!,
+        );
+        if (!mounted) return;
+      }
+
+      setState(() => _isLoading = false);
       ApiHelper.showSuccessSnackBar(
         context,
-        _isEditing ? 'Employee updated.' : 'Employee added successfully.',
+        _isEditing ? context.tr('common.updated_success') : context.tr('common.created_success'),
       );
       Navigator.of(context).pop(true);
     } else {
+      setState(() => _isLoading = false);
       ApiHelper.showErrorSnackBar(
         context,
-        res.errorMessage ?? 'Failed to save employee.',
+        res.errorMessage ?? context.tr('common.error'),
       );
     }
   }
@@ -91,7 +139,7 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Employee Details',
+              context.tr('staff.employees'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -99,96 +147,154 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                   ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel('${context.tr('customers.name')} *'),
+            _FieldLabel(context.tr('staff.employee_name')),
             TextFormField(
               controller: _nameCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(hintText: 'e.g. Ashan Perera'),
+              decoration: InputDecoration(hintText: context.tr('staff.employee_name_hint')),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                  (v == null || v.trim().isEmpty) ? context.tr('customers.name_required') : null,
             ),
             const SizedBox(height: 16),
             _FieldLabel('${context.tr('auth.email')} *'),
             TextFormField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(hintText: 'e.g. ashan@store.lk'),
+              decoration: InputDecoration(hintText: context.tr('auth.email_hint')),
               validator: (v) => (v == null || !v.contains('@'))
-                  ? 'Valid email is required'
+                  ? context.tr('auth.invalid_email')
                   : null,
             ),
             const SizedBox(height: 16),
-            _FieldLabel(context.tr('customers.phone')),
+            _FieldLabel(context.tr('auth.phone')),
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(hintText: '+94 77 123 4567'),
+              decoration: InputDecoration(hintText: context.tr('auth.phone_hint')),
             ),
+            const SizedBox(height: 16),
+            _FieldLabel(context.tr('staff.role')),
+            if (_isLoadingRoles)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(),
+              )
+            else
+              DropdownButtonFormField<String>(
+                initialValue: _selectedRoleId,
+                decoration: InputDecoration(
+                  hintText: context.tr('staff.select_role'),
+                  prefixIcon: const Icon(Icons.admin_panel_settings_outlined,
+                      color: AppColors.slate, size: 20),
+                ),
+                items: _availableRoles.map((role) {
+                  return DropdownMenuItem<String>(
+                    value: role.id,
+                    child: Text(
+                      role.name,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  setState(() => _selectedRoleId = val);
+                },
+              ),
             if (!_isEditing) ...[
               const SizedBox(height: 16),
               _FieldLabel('${context.tr('auth.password')} *'),
               TextFormField(
                 controller: _passwordCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(hintText: 'Set temporary password'),
-                validator: (v) =>
-                    (v == null || v.length < 6) ? 'At least 6 characters required' : null,
+                decoration: InputDecoration(hintText: context.tr('auth.password_hint')),
+                validator: (v) => (v == null || v.length < 8)
+                    ? context.tr('auth.password_min_length')
+                    : null,
               ),
             ],
-            const SizedBox(height: 28),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.slate,
-                      side: const BorderSide(color: AppColors.hairline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: Text(context.tr('common.cancel')),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.inkTeal,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            _isEditing ? 'Update Employee' : context.tr('common.save'),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
     );
 
+    final actionButtons = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.slate,
+                side: const BorderSide(
+                    color: AppColors.hairline, width: 1.5),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(context.tr('common.cancel')),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(0, 48),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      _isEditing
+                          ? context.tr('common.save')
+                          : context.tr('staff.add_employee'),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Flexible(child: formBody),
+        actionButtons,
+      ],
+    );
+
     if (widget.isModal) {
-      return formBody;
+      return content;
     }
 
     return Scaffold(
@@ -198,11 +304,14 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? 'Edit Employee' : context.tr('staff.add_employee'),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+          _isEditing ? context.tr('staff.edit_employee') : context.tr('staff.add_employee'),
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(child: formBody),
+      body: SafeArea(child: content),
     );
   }
 }

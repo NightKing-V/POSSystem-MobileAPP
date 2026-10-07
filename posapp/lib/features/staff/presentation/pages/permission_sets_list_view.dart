@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
+import '../../../../core/api/token_storage.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../../core/widgets/management_grid_table.dart';
@@ -7,7 +10,16 @@ import '../../data/staff_repository.dart';
 import './add_edit_permission_set_view.dart';
 
 class PermissionSetsListView extends StatefulWidget {
-  const PermissionSetsListView({super.key});
+  const PermissionSetsListView({
+    super.key,
+    this.orgId,
+    this.isEmbedded = false,
+    this.onBack,
+  });
+
+  final String? orgId;
+  final bool isEmbedded;
+  final VoidCallback? onBack;
 
   @override
   State<PermissionSetsListView> createState() => _PermissionSetsListViewState();
@@ -15,11 +27,13 @@ class PermissionSetsListView extends StatefulWidget {
 
 class _PermissionSetsListViewState extends State<PermissionSetsListView> {
   final _staffRepo = StaffRepository();
-  List<RoleProps> _roles = [];
+  List<OrgRoleProps> _roles = [];
   bool _isLoading = false;
 
   int? _sortColumnIndex = 0;
   bool _sortAscending = true;
+
+  String? get _effectiveOrgId => widget.orgId ?? TokenStorage.currentOrgId;
 
   @override
   void initState() {
@@ -29,7 +43,7 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
 
   Future<void> _loadRoles() async {
     setState(() => _isLoading = true);
-    final res = await _staffRepo.fetchRoles();
+    final res = await _staffRepo.fetchOrgRoles(orgId: _effectiveOrgId);
     if (!mounted) return;
     setState(() {
       _isLoading = false;
@@ -39,7 +53,7 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
     });
   }
 
-  List<RoleProps> get _processedRoles {
+  List<OrgRoleProps> get _processedRoles {
     var list = _roles;
     if (_sortColumnIndex != null) {
       list = List.of(list);
@@ -57,6 +71,9 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
           case 2:
             comp = a.permissions.length.compareTo(b.permissions.length);
             break;
+          case 3:
+            comp = a.userRolesCount.compareTo(b.userRolesCount);
+            break;
         }
         return _sortAscending ? comp : -comp;
       });
@@ -64,53 +81,60 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
     return list;
   }
 
-  void _openAddEdit([RoleProps? role]) async {
+  void _openAddEdit([OrgRoleProps? role]) async {
     final isEditing = role != null;
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: isEditing ? 'Edit Role' : 'New Role',
+      title: isEditing ? context.tr('staff.edit_role') : context.tr('staff.add_role'),
       subtitle:
-          isEditing ? role.name : 'Configure access control and permissions',
+          isEditing ? role.name : context.tr('staff.no_roles_hint'),
       leadingIcon: const Icon(Icons.security_outlined,
           color: AppColors.inkTeal, size: 20),
-      maxWidth: 620,
+      maxWidth: 640,
       builder: (_) => AddEditPermissionSetView(
         role: role,
+        orgId: _effectiveOrgId,
         isModal: true,
       ),
     );
     if (res == true) _loadRoles();
   }
 
-  void _handleDelete(RoleProps role) async {
+  void _handleDelete(OrgRoleProps role) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Role'),
-        content: Text('Are you sure you want to remove role "${role.name}"?'),
+        title: Text(context.tr('staff.delete_role_confirm')),
+        content: Text(
+          context.tr('common.confirm_delete_msg'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
     );
+
     if (confirm == true) {
-      setState(() {
-        _roles.removeWhere((r) => r.id == role.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Role "${role.name}" deleted.'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final res = await _staffRepo.deleteOrgRole(role.id);
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        setState(() {
+          _roles.removeWhere((r) => r.id == role.id);
+        });
+        ApiHelper.showSuccessSnackBar(context, context.tr('common.deleted_success'));
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          res.errorMessage ?? context.tr('common.error'),
         );
       }
     }
@@ -123,26 +147,33 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
     final body = Column(
       children: [
         ManagementHeaderBar(
-          title: 'Permission Sets',
-          subtitle: 'Staff Roles & Granular Permission Scopes',
+          title: context.tr('staff.roles'),
+          subtitle: context.tr('settings.permission_sets'),
           itemCountText:
               '${roles.length} ${roles.length == 1 ? 'role' : 'roles'}',
-          actionLabel: 'Add Role',
+          leading: (widget.onBack != null || Navigator.of(context).canPop())
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+                  tooltip: context.tr('common.back'),
+                  onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+                )
+              : null,
+          hideMobileTitle: false,
+          actionLabel: context.tr('staff.add_role'),
           actionIcon: Icons.add,
           onActionTap: () => _openAddEdit(),
         ),
         Expanded(
-          child: ManagementGridTable<RoleProps>(
+          child: ManagementGridTable<OrgRoleProps>(
             items: roles,
             isLoading: _isLoading,
-            emptyTitle: 'No roles defined',
-            emptySubtitle:
-                'Create staff roles to configure granular access permissions for your employees.',
+            emptyTitle: context.tr('staff.no_roles'),
+            emptySubtitle: context.tr('staff.no_roles_hint'),
             emptyIcon: Icons.admin_panel_settings_outlined,
             enablePagination: true,
             rowsPerPage: 10,
-            gridMainAxisExtent: 130,
-            gridMaxCrossAxisExtent: 440,
+            gridMainAxisExtent: 140,
+            gridMaxCrossAxisExtent: 460,
             sortColumnIndex: _sortColumnIndex,
             sortAscending: _sortAscending,
             onSort: (colIdx, asc) {
@@ -154,8 +185,8 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
             onEdit: (r) => _openAddEdit(r),
             onDelete: (r) => _handleDelete(r),
             columns: [
-              ManagementTableColumn<RoleProps>(
-                label: 'Role Name',
+              ManagementTableColumn<OrgRoleProps>(
+                label: context.tr('staff.role_name'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (role, _) => Row(
@@ -174,22 +205,49 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      role.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13.5,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            role.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          if (role.isSystem || role.isLocationScoped)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Wrap(
+                                spacing: 4,
+                                children: [
+                                  if (role.isSystem)
+                                    _BadgeChip(
+                                      label: context.tr('staff.system_role'),
+                                      color: AppColors.inkTeal,
+                                    ),
+                                  if (role.isLocationScoped)
+                                    _BadgeChip(
+                                      label: context.tr('staff.location_scoped'),
+                                      color: AppColors.marigold,
+                                    ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              ManagementTableColumn<RoleProps>(
-                label: 'Description',
+              ManagementTableColumn<OrgRoleProps>(
+                label: context.tr('common.description'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (role, _) => Text(
-                  role.description ?? 'Custom access role',
+                  role.description ?? '-',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -198,8 +256,21 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
                   ),
                 ),
               ),
-              ManagementTableColumn<RoleProps>(
-                label: 'Configured Permissions',
+              ManagementTableColumn<OrgRoleProps>(
+                label: context.tr('staff.employees'),
+                width: 130,
+                isSortable: true,
+                cellBuilder: (role, _) => Text(
+                  '${role.userRolesCount}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              ManagementTableColumn<OrgRoleProps>(
+                label: context.tr('staff.access_permissions'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (role, _) => Wrap(
@@ -223,9 +294,17 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
 
     final fab = ManagementHeaderBar.buildFab(
       context,
-      label: 'Add Role',
+      label: context.tr('staff.add_role'),
       onTap: () => _openAddEdit(),
     );
+
+    if (widget.isEmbedded) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(top: false, child: body),
+        floatingActionButton: fab,
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -233,16 +312,20 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
         backgroundColor: AppColors.paper,
         elevation: 0,
         titleSpacing: 16,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+          onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Permission Sets',
+            Text(context.tr('staff.roles'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${roles.length} roles configured',
+            Text('${roles.length} ${context.tr('staff.roles')}',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -259,7 +342,7 @@ class _PermissionSetsListViewState extends State<PermissionSetsListView> {
 class _PermissionSetCard extends StatelessWidget {
   const _PermissionSetCard({required this.role, required this.onTap});
 
-  final RoleProps role;
+  final OrgRoleProps role;
   final VoidCallback onTap;
 
   @override
@@ -300,15 +383,26 @@ class _PermissionSetCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          role.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14.5),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                role.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14.5),
+                              ),
+                            ),
+                            if (role.isLocationScoped)
+                              _BadgeChip(
+                                label: context.tr('staff.location_scoped_short'),
+                                color: AppColors.marigold,
+                              ),
+                          ],
                         ),
                         Text(
-                          role.description ?? 'Custom access role',
+                          role.description ?? context.tr('staff.custom_role'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -334,6 +428,32 @@ class _PermissionSetCard extends StatelessWidget {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BadgeChip extends StatelessWidget {
+  const _BadgeChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
       ),
     );

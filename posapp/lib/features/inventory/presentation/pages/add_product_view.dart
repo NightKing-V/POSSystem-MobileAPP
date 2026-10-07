@@ -66,9 +66,9 @@ class _AddProductViewState extends State<AddProductView> {
         '8901030${(100000 + (DateTime.now().millisecond * 9)).toString().substring(0, 6)}';
     setState(() => _skuCtrl.text = code);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Barcode generated successfully!'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(context.tr('common.success')),
+        duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -78,7 +78,7 @@ class _AddProductViewState extends State<AddProductView> {
     final res = await showResponsiveModal<bool>(
       context: context,
       title: context.tr('inventory.add_category'),
-      subtitle: 'Create a new category tag for products',
+      subtitle: context.tr('inventory.no_categories_hint'),
       leadingIcon: const Icon(Icons.category_outlined, color: AppColors.inkTeal, size: 20),
       maxWidth: 480,
       builder: (_) => const AddCategoryView(isModal: true),
@@ -113,11 +113,11 @@ class _AddProductViewState extends State<AddProductView> {
 
       if (res.isSuccess) {
         ApiHelper.showSuccessSnackBar(
-            context, '${_nameCtrl.text} added to inventory!');
+            context, context.tr('common.created_success'));
         Navigator.of(context).pop(true);
       } else {
         ApiHelper.showErrorSnackBar(
-            context, res.errorMessage ?? 'Failed to add product.');
+            context, res.errorMessage ?? context.tr('common.error'));
       }
     }
   }
@@ -132,32 +132,32 @@ class _AddProductViewState extends State<AddProductView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Section 1: Basic Info
-            _buildSectionHeader('General Information'),
+            _buildSectionHeader(context.tr('settings.general')),
             const SizedBox(height: 14),
 
-            _buildLabel('Product Name *'),
+            _buildLabel(context.tr('inventory.product_name')),
             TextFormField(
               controller: _nameCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Fresh Milk 1L, Cinnamon Tea 100g',
+              decoration: InputDecoration(
+                hintText: context.tr('inventory.product_name_hint'),
               ),
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Please enter product name'
+                  ? context.tr('inventory.product_name_required')
                   : null,
             ),
             const SizedBox(height: 16),
 
             // SKU + Barcode Row
-            _buildLabel('SKU / Barcode'),
+            _buildLabel(context.tr('inventory.barcode')),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _skuCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter or scan barcode',
+                    decoration: InputDecoration(
+                      hintText: context.tr('inventory.barcode_hint'),
                     ),
                   ),
                 ),
@@ -167,7 +167,7 @@ class _AddProductViewState extends State<AddProductView> {
                   child: OutlinedButton.icon(
                     onPressed: _generateBarcode,
                     icon: const Icon(Icons.qr_code_scanner, size: 18),
-                    label: const Text('Generate', style: TextStyle(fontSize: 12)),
+                    label: Text(context.tr('common.apply'), style: const TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.inkTeal,
                       side: const BorderSide(color: AppColors.hairline, width: 1.5),
@@ -183,13 +183,13 @@ class _AddProductViewState extends State<AddProductView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildLabel('Category *'),
+                _buildLabel(context.tr('inventory.category')),
                 TextButton.icon(
                   onPressed: _openNewCategoryModal,
                   icon: const Icon(Icons.add, size: 16, color: AppColors.inkTeal),
-                  label: const Text(
-                    'New Category',
-                    style: TextStyle(
+                  label: Text(
+                    context.tr('inventory.add_category'),
+                    style: const TextStyle(
                       color: AppColors.inkTeal,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -204,7 +204,7 @@ class _AddProductViewState extends State<AddProductView> {
             ),
             DropdownButtonFormField<String>(
               initialValue: _selectedCategoryId,
-              hint: Text(_isLoadingCats ? 'Loading categories...' : 'Select a category'),
+              hint: Text(_isLoadingCats ? context.tr('common.loading') : context.tr('inventory.select_category')),
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
@@ -218,7 +218,7 @@ class _AddProductViewState extends State<AddProductView> {
                   .toList(),
               onChanged: (v) => setState(() => _selectedCategoryId = v),
               validator: (v) => (v == null || v.isEmpty)
-                  ? 'Please select a category'
+                  ? context.tr('inventory.select_category')
                   : null,
             ),
             const SizedBox(height: 24),
@@ -227,7 +227,7 @@ class _AddProductViewState extends State<AddProductView> {
             const SizedBox(height: 20),
 
             // Section 2: Pricing & Stock
-            _buildSectionHeader('Pricing & Stock'),
+            _buildSectionHeader(context.tr('inventory.product_details')),
             const SizedBox(height: 14),
 
             Row(
@@ -236,13 +236,13 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildLabel('Cost Price (Rs.)'),
+                      _buildLabel(context.tr('inventory.cost')),
                       TextFormField(
                         controller: _costCtrl,
                         keyboardType:
                             const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          hintText: '0.00',
+                        decoration: InputDecoration(
+                          hintText: context.tr('inventory.cost_hint'),
                           prefixText: 'Rs. ',
                         ),
                       ),
@@ -254,21 +254,21 @@ class _AddProductViewState extends State<AddProductView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildLabel('Selling Price *'),
+                      _buildLabel(context.tr('inventory.price')),
                       TextFormField(
                         controller: _priceCtrl,
                         keyboardType:
                             const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          hintText: '0.00',
+                        decoration: InputDecoration(
+                          hintText: context.tr('inventory.price_hint'),
                           prefixText: 'Rs. ',
                         ),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Required';
+                            return context.tr('inventory.price_required');
                           }
                           if (double.tryParse(v) == null) {
-                            return 'Invalid number';
+                            return context.tr('common.error');
                           }
                           return null;
                         },
@@ -280,79 +280,98 @@ class _AddProductViewState extends State<AddProductView> {
             ),
             const SizedBox(height: 16),
 
-            _buildLabel('Initial Stock Level *'),
+            _buildLabel(context.tr('inventory.stock_qty')),
             TextFormField(
               controller: _stockCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: 'e.g. 50'),
+              decoration: InputDecoration(hintText: context.tr('inventory.stock_qty_hint')),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
-                  return 'Please enter initial stock';
+                  return context.tr('common.required');
                 }
                 if (int.tryParse(v) == null) {
-                  return 'Invalid integer';
+                  return context.tr('common.error');
                 }
                 return null;
               },
-            ),
-            const SizedBox(height: 32),
-
-            // Actions
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.slate,
-                      side: const BorderSide(color: AppColors.hairline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: Text(context.tr('common.cancel')),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.inkTeal,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            context.tr('inventory.add_product'),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
       ),
     );
 
+    final actionButtons = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.slate,
+                side: const BorderSide(color: AppColors.hairline, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(context.tr('common.cancel')),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: _isSaving ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(0, 48),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      context.tr('inventory.add_product'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Flexible(child: formBody),
+        actionButtons,
+      ],
+    );
+
     if (widget.isModal) {
-      return formBody;
+      return content;
     }
 
     return Scaffold(
@@ -366,7 +385,7 @@ class _AddProductViewState extends State<AddProductView> {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(child: formBody),
+      body: SafeArea(child: content),
     );
   }
 

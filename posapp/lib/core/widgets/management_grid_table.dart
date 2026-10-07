@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 /// Column definition for [ManagementGridTable].
@@ -421,7 +422,7 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
                                           size: 17,
                                           color: AppColors.inkTeal,
                                         ),
-                                        tooltip: 'View Details',
+                                        tooltip: context.tr('common.view_details'),
                                         splashRadius: 18,
                                         onPressed: () => widget.onView!(item),
                                       ),
@@ -432,7 +433,7 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
                                           size: 17,
                                           color: AppColors.slate,
                                         ),
-                                        tooltip: 'Edit',
+                                        tooltip: context.tr('common.edit'),
                                         splashRadius: 18,
                                         onPressed: () => widget.onEdit!(item),
                                       ),
@@ -443,7 +444,7 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
                                           size: 17,
                                           color: AppColors.error,
                                         ),
-                                        tooltip: 'Delete',
+                                        tooltip: context.tr('common.delete'),
                                         splashRadius: 18,
                                         onPressed: () => widget.onDelete!(item),
                                       ),
@@ -588,9 +589,9 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
       child: Row(
         children: [
           if (!isCompact) ...[
-            const Text(
-              'Rows per page:',
-              style: TextStyle(fontSize: 12, color: AppColors.slate),
+            Text(
+              context.tr('common.rows_per_page'),
+              style: const TextStyle(fontSize: 12, color: AppColors.slate),
             ),
             const SizedBox(width: 8),
             Container(
@@ -624,7 +625,11 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
             const SizedBox(width: 16),
           ],
           Text(
-            'Showing $startItem–$endItem of $total',
+            context.tr('common.showing_range', args: {
+              'start': '$startItem',
+              'end': '$endItem',
+              'total': '$total',
+            }),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -633,7 +638,10 @@ class _ManagementGridTableState<T> extends State<ManagementGridTable<T>> {
           ),
           const Spacer(),
           Text(
-            'Page ${_activePage + 1} of ${maxPage == 0 ? 1 : maxPage}',
+            context.tr('common.page_of', args: {
+              'page': '${_activePage + 1}',
+              'total': '${maxPage == 0 ? 1 : maxPage}',
+            }),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

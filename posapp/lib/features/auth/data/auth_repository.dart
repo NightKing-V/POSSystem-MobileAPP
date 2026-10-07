@@ -21,25 +21,21 @@ class RegisterDto {
   final String password;
   final String? fullname;
   final String? phone;
-  final String? businessName;
-  final String? businessType;
 
   const RegisterDto({
     required this.email,
     required this.password,
     this.fullname,
     this.phone,
-    this.businessName,
-    this.businessType,
   });
 
   Map<String, dynamic> toJson() => {
         'email': email.trim(),
         'password': password,
-        if (fullname?.isNotEmpty == true) 'fullname': fullname,
-        if (phone?.isNotEmpty == true) 'phone': phone,
-        if (businessName?.isNotEmpty == true) 'businessName': businessName,
-        if (businessType?.isNotEmpty == true) 'businessType': businessType,
+        if (fullname != null && fullname!.trim().isNotEmpty)
+          'fullname': fullname!.trim(),
+        if (phone != null && phone!.trim().isNotEmpty)
+          'phone': phone!.trim(),
       };
 }
 

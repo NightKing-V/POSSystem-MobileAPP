@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../auth/presentation/pages/login_page.dart';
@@ -63,7 +64,7 @@ class SideNavPanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildHeader(initial),
+          _buildHeader(context, initial),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -73,7 +74,7 @@ class SideNavPanel extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                     child: Text(
-                      'MAIN',
+                      context.tr('dashboard.main'),
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
@@ -87,7 +88,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.dashboard_outlined,
                   activeIcon: Icons.dashboard,
-                  label: 'Home',
+                  label: context.tr('dashboard.home'),
                   isSelected: selectedIndex == 0,
                   onTap: () => onItemSelected(0),
                   isExpanded: isExpanded,
@@ -95,7 +96,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.receipt_long_outlined,
                   activeIcon: Icons.receipt_long,
-                  label: 'Bill',
+                  label: context.tr('dashboard.bill'),
                   isSelected: selectedIndex == 1,
                   onTap: () => onItemSelected(1),
                   isExpanded: isExpanded,
@@ -103,20 +104,20 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.settings_outlined,
                   activeIcon: Icons.settings,
-                  label: 'Settings',
+                  label: context.tr('settings.title'),
                   isSelected: selectedIndex == 2,
                   onTap: () => onItemSelected(2),
                   isExpanded: isExpanded,
                 ),
 
                 // Blue Themed Section Separator
-                _buildBlueSectionSeparator(),
+                _buildBlueSectionSeparator(context),
 
                 // Management module options
                 _NavItem(
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2,
-                  label: 'Products',
+                  label: context.tr('inventory.products'),
                   isSelected: selectedIndex == 3,
                   onTap: () => onItemSelected(3),
                   isExpanded: isExpanded,
@@ -124,7 +125,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.category_outlined,
                   activeIcon: Icons.category,
-                  label: 'Categories',
+                  label: context.tr('inventory.categories'),
                   isSelected: selectedIndex == 4,
                   onTap: () => onItemSelected(4),
                   isExpanded: isExpanded,
@@ -132,7 +133,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.people_alt_outlined,
                   activeIcon: Icons.people_alt,
-                  label: 'Customers',
+                  label: context.tr('customers.title'),
                   isSelected: selectedIndex == 5,
                   onTap: () => onItemSelected(5),
                   isExpanded: isExpanded,
@@ -140,7 +141,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.badge_outlined,
                   activeIcon: Icons.badge,
-                  label: 'Staff',
+                  label: context.tr('staff.title'),
                   isSelected: selectedIndex == 6,
                   onTap: () => onItemSelected(6),
                   isExpanded: isExpanded,
@@ -148,7 +149,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.local_shipping_outlined,
                   activeIcon: Icons.local_shipping,
-                  label: 'Suppliers',
+                  label: context.tr('suppliers.title'),
                   isSelected: selectedIndex == 7,
                   onTap: () => onItemSelected(7),
                   isExpanded: isExpanded,
@@ -156,7 +157,7 @@ class SideNavPanel extends StatelessWidget {
                 _NavItem(
                   icon: Icons.assignment_outlined,
                   activeIcon: Icons.assignment,
-                  label: 'Purchase Orders',
+                  label: context.tr('suppliers.purchase_orders'),
                   isSelected: selectedIndex == 8,
                   onTap: () => onItemSelected(8),
                   isExpanded: isExpanded,
@@ -170,7 +171,7 @@ class SideNavPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildBlueSectionSeparator() {
+  Widget _buildBlueSectionSeparator(BuildContext context) {
     if (isExpanded) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
@@ -186,8 +187,8 @@ class SideNavPanel extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'MANAGEMENT',
-              style: TextStyle(
+              context.tr('dashboard.management'),
+              style: const TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
                 color: AppColors.inkTeal,
@@ -236,7 +237,7 @@ class SideNavPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(String initial) {
+  Widget _buildHeader(BuildContext context, String initial) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isExpanded ? 16 : 12,
@@ -308,9 +309,9 @@ class SideNavPanel extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 5),
-                          const Text(
-                            'Store Admin',
-                            style: TextStyle(
+                          Text(
+                            context.tr('dashboard.store_admin'),
+                            style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w500,
                               color: AppColors.slate,
@@ -368,7 +369,7 @@ class SideNavPanel extends StatelessWidget {
           _NavItem(
             icon: Icons.swap_horiz,
             activeIcon: Icons.swap_horiz,
-            label: 'Switch Business',
+            label: context.tr('orgs.switch_business'),
             isSelected: false,
             onTap: onSwitchBusiness,
             isExpanded: isExpanded,
@@ -377,7 +378,7 @@ class SideNavPanel extends StatelessWidget {
           _NavItem(
             icon: Icons.logout,
             activeIcon: Icons.logout,
-            label: 'Logout',
+            label: context.tr('settings.logout'),
             isSelected: false,
             onTap: () => _handleLogout(context),
             isExpanded: isExpanded,

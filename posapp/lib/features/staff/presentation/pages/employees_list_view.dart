@@ -95,10 +95,10 @@ class _EmployeesListViewState extends State<EmployeesListView> {
     final isEditing = employee != null;
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: isEditing ? 'Edit Staff Member' : context.tr('staff.add_employee'),
+      title: isEditing ? context.tr('staff.edit_employee') : context.tr('staff.add_employee'),
       subtitle: isEditing
           ? employee.email
-          : 'Add staff account & set role permissions',
+          : context.tr('staff.add_employee_subtitle'),
       leadingIcon: const Icon(Icons.badge_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 620,
@@ -117,17 +117,17 @@ class _EmployeesListViewState extends State<EmployeesListView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Staff Member'),
-        content: Text('Are you sure you want to remove "${employee.name}"?'),
+        title: Text(context.tr('staff.delete_employee_confirm')),
+        content: Text('${context.tr('common.confirm_delete_msg')} (${employee.name})'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
@@ -139,7 +139,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Staff member "${employee.name}" removed.'),
+            content: Text('${employee.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -155,9 +155,8 @@ class _EmployeesListViewState extends State<EmployeesListView> {
       children: [
         ManagementHeaderBar(
           title: context.tr('staff.title'),
-          subtitle: 'Staff Directory & Access Management',
-          itemCountText:
-              '${employees.length} ${employees.length == 1 ? 'member' : 'members'}',
+          subtitle: context.tr('staff.subtitle'),
+          itemCountText: context.tr('staff.count_members', args: {'count': '${employees.length}'}),
           searchCtrl: _searchCtrl,
           searchHint: context.tr('common.search'),
           onSearchChanged: (v) => setState(() => _search = v),
@@ -169,8 +168,8 @@ class _EmployeesListViewState extends State<EmployeesListView> {
           child: ManagementGridTable<StaffUserProps>(
             items: employees,
             isLoading: _isLoading,
-            emptyTitle: 'No staff found',
-            emptySubtitle: 'Try adjusting your search terms.',
+            emptyTitle: context.tr('staff.no_staff_found'),
+            emptySubtitle: context.tr('staff.adjust_search_hint'),
             emptyIcon: Icons.person_search_outlined,
             enablePagination: true,
             rowsPerPage: 10,
@@ -186,7 +185,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
             onDelete: (e) => _handleDelete(e),
             columns: [
               ManagementTableColumn<StaffUserProps>(
-                label: 'Staff Member',
+                label: context.tr('staff.staff_member'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (emp, _) {
@@ -242,7 +241,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
                 },
               ),
               ManagementTableColumn<StaffUserProps>(
-                label: 'Role / Designation',
+                label: context.tr('staff.role_designation'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (emp, _) => Align(
@@ -266,16 +265,16 @@ class _EmployeesListViewState extends State<EmployeesListView> {
                 ),
               ),
               ManagementTableColumn<StaffUserProps>(
-                label: 'Assigned Branch',
+                label: context.tr('staff.assigned_branch'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (emp, _) => Text(
-                  emp.locationName ?? 'All Locations',
+                  emp.locationName ?? context.tr('staff.all_locations'),
                   style: const TextStyle(fontSize: 13, color: AppColors.slate),
                 ),
               ),
               ManagementTableColumn<StaffUserProps>(
-                label: 'Status',
+                label: context.tr('common.status'),
                 width: 110,
                 isSortable: true,
                 cellBuilder: (emp, _) => _StatusDot(active: emp.isActive),
@@ -320,7 +319,7 @@ class _EmployeesListViewState extends State<EmployeesListView> {
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${employees.length} staff members',
+            Text(context.tr('staff.count_members', args: {'count': '${employees.length}'}),
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -463,7 +462,7 @@ class _StatusDot extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            active ? 'Active' : 'Inactive',
+            active ? context.tr('common.active') : context.tr('common.inactive'),
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,

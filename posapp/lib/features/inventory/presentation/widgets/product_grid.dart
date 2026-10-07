@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/product.dart';
 
@@ -160,7 +161,7 @@ class _EmptySearch extends StatelessWidget {
             Icon(Icons.search_off_rounded, size: 36, color: AppColors.slate.withValues(alpha: 0.4)),
             const SizedBox(height: 10),
             Text(
-              'No products found',
+              context.tr('inventory.no_products'),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13),
             ),
           ],

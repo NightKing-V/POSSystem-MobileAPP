@@ -13,7 +13,7 @@ class LanguagePickerSheet extends StatelessWidget {
     return showResponsiveModal(
       context: context,
       title: context.tr('settings.select_language'),
-      subtitle: 'Change app display language',
+      subtitle: context.tr('settings.change_language_desc'),
       leadingIcon: const Icon(Icons.language_rounded, color: AppColors.inkTeal, size: 20),
       maxWidth: 460,
       maxHeightFactor: 0.65,

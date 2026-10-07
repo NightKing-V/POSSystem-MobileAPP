@@ -98,13 +98,13 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
     if (res.isSuccess) {
       ApiHelper.showSuccessSnackBar(
         context,
-        _isEditing ? 'Supplier updated.' : 'Supplier added.',
+        _isEditing ? context.tr('common.updated_success') : context.tr('common.created_success'),
       );
       Navigator.of(context).pop(true);
     } else {
       ApiHelper.showErrorSnackBar(
         context,
-        res.errorMessage ?? 'Failed to save supplier.',
+        res.errorMessage ?? context.tr('common.error'),
       );
     }
   }
@@ -119,7 +119,7 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Supplier Details',
+              context.tr('suppliers.title'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -127,15 +127,15 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                   ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel('${context.tr('suppliers.supplier_name')} *'),
+            _FieldLabel(context.tr('suppliers.supplier_name')),
             TextFormField(
               controller: _nameCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Lanka Fresh Distributors',
+              decoration: InputDecoration(
+                hintText: context.tr('suppliers.supplier_name_hint'),
               ),
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Supplier name is required'
+                  ? context.tr('suppliers.supplier_name_required')
                   : null,
             ),
             const SizedBox(height: 16),
@@ -143,33 +143,33 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
             TextFormField(
               controller: _contactCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Bandara Silva',
+              decoration: InputDecoration(
+                hintText: context.tr('suppliers.contact_person_hint'),
               ),
             ),
             const SizedBox(height: 16),
-            _FieldLabel('Phone Number'),
+            _FieldLabel('${context.tr('common.phone')} (${context.tr('common.optional')})'),
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                hintText: '+94 11 234 5678',
+              decoration: InputDecoration(
+                hintText: context.tr('customers.phone_hint'),
               ),
             ),
             const SizedBox(height: 16),
-            _FieldLabel('Email Address'),
+            _FieldLabel('${context.tr('common.email')} (${context.tr('common.optional')})'),
             TextFormField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                hintText: 'orders@supplier.lk',
+              decoration: InputDecoration(
+                hintText: context.tr('customers.email_hint'),
               ),
             ),
             const SizedBox(height: 20),
             const Divider(color: AppColors.hairline, height: 1),
             const SizedBox(height: 20),
             Text(
-              'Address & Notes',
+              context.tr('customers.contact_and_address'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -177,88 +177,109 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                   ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel('Physical Address'),
+            _FieldLabel('${context.tr('common.address')} (${context.tr('common.optional')})'),
             TextFormField(
               controller: _addressCtrl,
-              decoration: const InputDecoration(
-                hintText: 'e.g. 100 Main Street, Pettah',
+              decoration: InputDecoration(
+                hintText: context.tr('customers.address_hint'),
               ),
             ),
             const SizedBox(height: 16),
-            _FieldLabel('Notes'),
+            _FieldLabel('${context.tr('common.description')} (${context.tr('common.optional')})'),
             TextFormField(
               controller: _notesCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Payment terms, delivery schedules…',
+              decoration: InputDecoration(
+                hintText: context.tr('suppliers.no_suppliers_hint'),
               ),
-            ),
-            const SizedBox(height: 28),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.slate,
-                      side: const BorderSide(
-                        color: AppColors.hairline,
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: Text(context.tr('common.cancel')),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.inkTeal,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            _isEditing
-                                ? 'Update Supplier'
-                                : context.tr('common.save'),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
       ),
     );
 
+    final actionButtons = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.slate,
+                side: const BorderSide(
+                  color: AppColors.hairline,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(context.tr('common.cancel')),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(0, 48),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      _isEditing
+                          ? context.tr('common.save')
+                          : context.tr('suppliers.add_supplier'),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Flexible(child: formBody),
+        actionButtons,
+      ],
+    );
+
     if (widget.isModal) {
-      return formBody;
+      return content;
     }
 
     return Scaffold(
@@ -268,11 +289,11 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? 'Edit Supplier' : context.tr('suppliers.add_supplier'),
+          _isEditing ? context.tr('suppliers.edit_supplier') : context.tr('suppliers.add_supplier'),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(child: formBody),
+      body: SafeArea(child: content),
     );
   }
 }

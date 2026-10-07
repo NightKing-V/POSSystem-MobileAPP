@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../../core/widgets/management_grid_table.dart';
@@ -8,7 +9,14 @@ import '../widgets/location_card.dart';
 import './add_edit_location_view.dart';
 
 class LocationsListView extends StatefulWidget {
-  const LocationsListView({super.key});
+  const LocationsListView({
+    super.key,
+    this.isEmbedded = false,
+    this.onBack,
+  });
+
+  final bool isEmbedded;
+  final VoidCallback? onBack;
 
   @override
   State<LocationsListView> createState() => _LocationsListViewState();
@@ -77,8 +85,8 @@ class _LocationsListViewState extends State<LocationsListView> {
   void _openAddLocation() async {
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: 'Add Location',
-      subtitle: 'Create a new branch or store location',
+      title: context.tr('locations.add_location'),
+      subtitle: context.tr('locations.no_locations_hint'),
       leadingIcon: const Icon(Icons.storefront_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 600,
@@ -90,7 +98,7 @@ class _LocationsListViewState extends State<LocationsListView> {
   void _openEditLocation(LocationProps loc) async {
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: 'Edit Location',
+      title: context.tr('locations.edit_location'),
       subtitle: loc.name,
       leadingIcon: const Icon(Icons.storefront_outlined,
           color: AppColors.inkTeal, size: 20),
@@ -104,17 +112,17 @@ class _LocationsListViewState extends State<LocationsListView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Location'),
-        content: Text('Are you sure you want to remove "${loc.name}"?'),
+        title: Text(context.tr('locations.delete_location_confirm')),
+        content: Text(context.tr('common.confirm_delete_msg')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
@@ -126,7 +134,7 @@ class _LocationsListViewState extends State<LocationsListView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Location "${loc.name}" deleted.'),
+            content: Text(context.tr('common.deleted_success')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -141,11 +149,18 @@ class _LocationsListViewState extends State<LocationsListView> {
     final body = Column(
       children: [
         ManagementHeaderBar(
-          title: 'Locations',
-          subtitle: 'Store Branches & Outlets',
-          itemCountText:
-              '${locations.length} ${locations.length == 1 ? 'location' : 'locations'}',
-          actionLabel: 'Add Location',
+          title: context.tr('locations.title'),
+          subtitle: context.tr('settings.locations'),
+          itemCountText: context.tr('orgs.locations_count', args: {'count': locations.length}),
+          leading: (widget.onBack != null || Navigator.of(context).canPop())
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+                  tooltip: context.tr('common.back'),
+                  onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+                )
+              : null,
+          hideMobileTitle: false,
+          actionLabel: context.tr('locations.add_location'),
           actionIcon: Icons.add,
           onActionTap: _openAddLocation,
         ),
@@ -153,9 +168,8 @@ class _LocationsListViewState extends State<LocationsListView> {
           child: ManagementGridTable<LocationProps>(
             items: locations,
             isLoading: _isLoading,
-            emptyTitle: 'No locations yet',
-            emptySubtitle:
-                'Add your store branches to manage inventory and staff per outlet.',
+            emptyTitle: context.tr('locations.no_locations'),
+            emptySubtitle: context.tr('locations.no_locations_hint'),
             emptyIcon: Icons.storefront_outlined,
             enablePagination: true,
             rowsPerPage: 10,
@@ -173,7 +187,7 @@ class _LocationsListViewState extends State<LocationsListView> {
             onDelete: (loc) => _handleDelete(loc),
             columns: [
               ManagementTableColumn<LocationProps>(
-                label: 'Outlet Name',
+                label: context.tr('locations.branch_name'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (loc, _) => Row(
@@ -203,7 +217,7 @@ class _LocationsListViewState extends State<LocationsListView> {
                 ),
               ),
               ManagementTableColumn<LocationProps>(
-                label: 'Outlet Type',
+                label: context.tr('common.description'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (loc, _) => Align(
@@ -228,7 +242,7 @@ class _LocationsListViewState extends State<LocationsListView> {
                 ),
               ),
               ManagementTableColumn<LocationProps>(
-                label: 'Status',
+                label: context.tr('common.status'),
                 width: 110,
                 cellBuilder: (loc, i) {
                   final isActive =
@@ -243,7 +257,7 @@ class _LocationsListViewState extends State<LocationsListView> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isActive ? 'Active' : 'Inactive',
+                      isActive ? context.tr('common.active') : context.tr('common.inactive'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -273,9 +287,17 @@ class _LocationsListViewState extends State<LocationsListView> {
 
     final fab = ManagementHeaderBar.buildFab(
       context,
-      label: 'Add Location',
+      label: context.tr('locations.add_location'),
       onTap: _openAddLocation,
     );
+
+    if (widget.isEmbedded) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(top: false, child: body),
+        floatingActionButton: fab,
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.paper,
@@ -283,19 +305,23 @@ class _LocationsListViewState extends State<LocationsListView> {
         backgroundColor: AppColors.paper,
         elevation: 0,
         titleSpacing: 16,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+          onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Locations',
+              context.tr('locations.title'),
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
                   ?.copyWith(fontSize: 17),
             ),
             Text(
-              'Manage store branches',
+              context.tr('locations.location_details'),
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium

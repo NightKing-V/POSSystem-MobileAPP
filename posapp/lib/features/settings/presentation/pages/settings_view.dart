@@ -4,6 +4,7 @@ import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/localization/locale_controller.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/management_header.dart';
 import '../../../Organisations/data/orgs_repository.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../auth/presentation/pages/login_page.dart';
@@ -15,9 +16,21 @@ import '../widgets/settings_group_card.dart';
 import '../widgets/settings_tile_item.dart';
 import './locations_list_view.dart';
 
-/// Clean Settings View orchestrating modular settings group cards,
-/// profile header, language modal, and danger actions.
-class SettingsView extends StatelessWidget {
+enum SettingsSubPage {
+  locations,
+  permissionSets,
+  businessInfo,
+  receiptTemplates,
+  taxesFees,
+  thermalPrinters,
+  barcodeScanners,
+  syncCache,
+}
+
+/// Settings View orchestrating modular settings group cards,
+/// seamless inlay subpage navigation with back button, profile header,
+/// language modal, and danger actions.
+class SettingsView extends StatefulWidget {
   const SettingsView({
     super.key,
     required this.businessName,
@@ -26,6 +39,13 @@ class SettingsView extends StatelessWidget {
 
   final String businessName;
   final String? orgId;
+
+  @override
+  State<SettingsView> createState() => _SettingsViewState();
+}
+
+class _SettingsViewState extends State<SettingsView> {
+  SettingsSubPage? _currentSubPage;
 
   Future<void> _handleDeleteBusiness(BuildContext context) async {
     if (!TokenStorage.isAuthenticated) {
@@ -36,7 +56,7 @@ class SettingsView extends StatelessWidget {
       return;
     }
 
-    if (orgId == null || orgId!.isEmpty) {
+    if (widget.orgId == null || widget.orgId!.isEmpty) {
       ApiHelper.showErrorSnackBar(
         context,
         'Cannot delete: Business ID is missing.',
@@ -46,7 +66,7 @@ class SettingsView extends StatelessWidget {
 
     final confirmed = await SettingsDialogs.confirmDeleteBusiness(
       context,
-      businessName: businessName,
+      businessName: widget.businessName,
     );
     if (!confirmed || !context.mounted) return;
 
@@ -60,7 +80,7 @@ class SettingsView extends StatelessWidget {
     );
 
     final orgsRepo = OrgsRepository();
-    final res = await orgsRepo.deleteOrganization(orgId!);
+    final res = await orgsRepo.deleteOrganization(widget.orgId!);
 
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
@@ -68,7 +88,7 @@ class SettingsView extends StatelessWidget {
     if (res.isSuccess) {
       ApiHelper.showSuccessSnackBar(
         context,
-        'Business "$businessName" deleted successfully.',
+        'Business "${widget.businessName}" deleted successfully.',
       );
       Navigator.of(context).pop();
     } else {
@@ -93,8 +113,222 @@ class SettingsView extends StatelessWidget {
     );
   }
 
+  Widget _buildGenericSettingsSubpage({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            ManagementHeaderBar(
+              title: title,
+              subtitle: subtitle,
+              hideMobileTitle: false,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+                tooltip: context.tr('settings.back_to_settings'),
+                onPressed: () => setState(() => _currentSubPage = null),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 680),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.hairline.withValues(alpha: 0.8),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppColors.inkTeal.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(icon, color: AppColors.inkTeal, size: 22),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    Text(
+                                      subtitle,
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        color: AppColors.slate,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          const Divider(color: AppColors.hairline, height: 1),
+                          const SizedBox(height: 20),
+                          ...children,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_currentSubPage != null) {
+      Widget subPageWidget;
+      switch (_currentSubPage!) {
+        case SettingsSubPage.locations:
+          subPageWidget = LocationsListView(
+            isEmbedded: true,
+            onBack: () => setState(() => _currentSubPage = null),
+          );
+          break;
+        case SettingsSubPage.permissionSets:
+          subPageWidget = PermissionSetsListView(
+            orgId: widget.orgId,
+            isEmbedded: true,
+            onBack: () => setState(() => _currentSubPage = null),
+          );
+          break;
+        case SettingsSubPage.businessInfo:
+          subPageWidget = _buildGenericSettingsSubpage(
+            title: context.tr('settings.business_info'),
+            subtitle: context.tr('settings.store_location_category_desc'),
+            icon: Icons.storefront_outlined,
+            children: [
+              _InfoRow(label: context.tr('settings.store_name'), value: widget.businessName),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.organization_id'), value: widget.orgId ?? context.tr('settings.default_tenant')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.category_label'), value: context.tr('settings.retail_store')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.status_label'), value: context.tr('settings.active_tenant')),
+            ],
+          );
+          break;
+        case SettingsSubPage.receiptTemplates:
+          subPageWidget = _buildGenericSettingsSubpage(
+            title: context.tr('settings.receipt_templates'),
+            subtitle: context.tr('settings.receipt_templates_desc'),
+            icon: Icons.receipt_long_outlined,
+            children: [
+              _InfoRow(label: context.tr('settings.header_text'), value: context.tr('settings.header_text_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.paper_size'), value: context.tr('settings.paper_size_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.footer_note'), value: context.tr('settings.footer_note_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.show_barcode'), value: context.tr('settings.enabled')),
+            ],
+          );
+          break;
+        case SettingsSubPage.taxesFees:
+          subPageWidget = _buildGenericSettingsSubpage(
+            title: context.tr('settings.taxes_fees'),
+            subtitle: context.tr('settings.taxes_fees_desc'),
+            icon: Icons.percent_outlined,
+            children: [
+              _InfoRow(label: context.tr('settings.vat_sales_tax'), value: context.tr('settings.vat_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.service_charge'), value: '0%'),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.cash_discounting'), value: context.tr('settings.supported')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.rounding_mode'), value: context.tr('settings.rounding_val')),
+            ],
+          );
+          break;
+        case SettingsSubPage.thermalPrinters:
+          subPageWidget = _buildGenericSettingsSubpage(
+            title: context.tr('settings.thermal_printers'),
+            subtitle: context.tr('settings.thermal_printers_desc'),
+            icon: Icons.print_outlined,
+            children: [
+              _InfoRow(label: context.tr('settings.default_printer'), value: context.tr('settings.default_printer_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.printer_interface'), value: context.tr('settings.printer_interface_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.auto_cut_paper'), value: context.tr('settings.enabled')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.cash_drawer_kick'), value: context.tr('settings.cash_drawer_val')),
+            ],
+          );
+          break;
+        case SettingsSubPage.barcodeScanners:
+          subPageWidget = _buildGenericSettingsSubpage(
+            title: context.tr('settings.barcode_scanners'),
+            subtitle: context.tr('settings.barcode_scanners_desc'),
+            icon: Icons.barcode_reader,
+            children: [
+              _InfoRow(label: context.tr('settings.scanner_mode'), value: context.tr('settings.scanner_mode_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.suffix_key'), value: context.tr('settings.suffix_key_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.camera_scanner'), value: context.tr('settings.camera_scanner_val')),
+            ],
+          );
+          break;
+        case SettingsSubPage.syncCache:
+          subPageWidget = _buildGenericSettingsSubpage(
+            title: context.tr('settings.sync_cache'),
+            subtitle: context.tr('settings.sync_cache_desc'),
+            icon: Icons.sync_outlined,
+            children: [
+              _InfoRow(label: context.tr('settings.sync_status'), value: context.tr('settings.sync_status_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.offline_storage'), value: context.tr('settings.offline_storage_val')),
+              const SizedBox(height: 12),
+              _InfoRow(label: context.tr('settings.pending_uploads'), value: context.tr('settings.pending_uploads_val')),
+            ],
+          );
+          break;
+      }
+
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          setState(() => _currentSubPage = null);
+        },
+        child: subPageWidget,
+      );
+    }
+
     final currentLang = LocaleController().currentLanguage;
 
     return Align(
@@ -106,7 +340,7 @@ class SettingsView extends StatelessWidget {
           child: Column(
             children: [
               // Store Header Card
-              BusinessHeaderCard(businessName: businessName),
+              BusinessHeaderCard(businessName: widget.businessName),
               const SizedBox(height: 20),
 
               // Language Selector Card
@@ -154,20 +388,20 @@ class SettingsView extends StatelessWidget {
                   SettingsTileItem(
                     icon: Icons.storefront_outlined,
                     title: context.tr('settings.business_info'),
-                    subtitle: 'Store location, category and contact info',
-                    onTap: () {},
+                    subtitle: context.tr('settings.store_location_category_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.businessInfo),
                   ),
                   SettingsTileItem(
                     icon: Icons.receipt_long_outlined,
                     title: context.tr('settings.receipt_templates'),
-                    subtitle: 'Header, footer logos & layouts',
-                    onTap: () {},
+                    subtitle: context.tr('settings.receipt_templates_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.receiptTemplates),
                   ),
                   SettingsTileItem(
                     icon: Icons.percent_outlined,
                     title: context.tr('settings.taxes_fees'),
-                    subtitle: 'Configure VAT, service charges, discounts',
-                    onTap: () {},
+                    subtitle: context.tr('settings.taxes_fees_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.taxesFees),
                   ),
                 ],
               ),
@@ -180,22 +414,14 @@ class SettingsView extends StatelessWidget {
                   SettingsTileItem(
                     icon: Icons.storefront_outlined,
                     title: context.tr('settings.locations'),
-                    subtitle: 'Manage store branches and addresses',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const LocationsListView(),
-                      ),
-                    ),
+                    subtitle: context.tr('settings.locations_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.locations),
                   ),
                   SettingsTileItem(
                     icon: Icons.admin_panel_settings_outlined,
                     title: context.tr('settings.permission_sets'),
-                    subtitle: 'Define staff roles and access levels',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const PermissionSetsListView(),
-                      ),
-                    ),
+                    subtitle: context.tr('settings.permission_sets_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.permissionSets),
                   ),
                 ],
               ),
@@ -208,20 +434,20 @@ class SettingsView extends StatelessWidget {
                   SettingsTileItem(
                     icon: Icons.print_outlined,
                     title: context.tr('settings.thermal_printers'),
-                    subtitle: 'Bluetooth / LAN printer setups',
-                    onTap: () {},
+                    subtitle: context.tr('settings.thermal_printers_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.thermalPrinters),
                   ),
                   SettingsTileItem(
                     icon: Icons.barcode_reader,
                     title: context.tr('settings.barcode_scanners'),
-                    subtitle: 'External hardware configurations',
-                    onTap: () {},
+                    subtitle: context.tr('settings.barcode_scanners_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.barcodeScanners),
                   ),
                   SettingsTileItem(
                     icon: Icons.sync_outlined,
                     title: context.tr('settings.sync_cache'),
-                    subtitle: 'Local backup status: All synced',
-                    onTap: () {},
+                    subtitle: context.tr('settings.sync_cache_desc'),
+                    onTap: () => setState(() => _currentSubPage = SettingsSubPage.syncCache),
                   ),
                 ],
               ),
@@ -280,6 +506,43 @@ class SettingsView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 140,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.slate,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.bold,
+              color: AppColors.ink,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

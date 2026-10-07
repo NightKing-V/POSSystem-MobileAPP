@@ -60,7 +60,7 @@ class _AddCustomerViewState extends State<AddCustomerView> {
       setState(() => _isLoading = false);
 
       if (response.isSuccess) {
-        ApiHelper.showSuccessSnackBar(context, 'Customer added successfully.');
+        ApiHelper.showSuccessSnackBar(context, context.tr('common.created_success'));
         Navigator.of(context).pop(true);
       } else {
         ApiHelper.showErrorSnackBar(
@@ -128,60 +128,81 @@ class _AddCustomerViewState extends State<AddCustomerView> {
               controller: _addressCtrl,
               decoration: InputDecoration(hintText: context.tr('customers.address_hint')),
             ),
-            const SizedBox(height: 28),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.slate,
-                      side: const BorderSide(color: AppColors.hairline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: Text(context.tr('common.cancel')),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.inkTeal,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            context.tr('customers.save_customer'),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
     );
 
+    final actionButtons = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.slate,
+                side: const BorderSide(color: AppColors.hairline, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(context.tr('common.cancel')),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(0, 48),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      context.tr('customers.save_customer'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Flexible(child: formBody),
+        actionButtons,
+      ],
+    );
+
     if (widget.isModal) {
-      return formBody;
+      return content;
     }
 
     return Scaffold(
@@ -195,7 +216,7 @@ class _AddCustomerViewState extends State<AddCustomerView> {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(child: formBody),
+      body: SafeArea(child: content),
     );
   }
 }

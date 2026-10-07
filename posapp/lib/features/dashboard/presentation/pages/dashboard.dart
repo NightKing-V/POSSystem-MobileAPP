@@ -68,17 +68,17 @@ class _DashboardPageState extends State<DashboardPage> {
       case 2:
         return context.tr('settings.general');
       case 3:
-        return 'Product Catalog & Inventory';
+        return context.tr('inventory.subtitle');
       case 4:
-        return 'Inventory Categories';
+        return context.tr('inventory.categories_subtitle');
       case 5:
-        return 'Customer Directory & Loyalty';
+        return context.tr('customers.subtitle');
       case 6:
-        return 'Staff & Access Permissions';
+        return context.tr('staff.subtitle');
       case 7:
-        return 'Vendor & Supplier Directory';
+        return context.tr('suppliers.subtitle');
       case 8:
-        return 'Stock Replenishment Orders';
+        return context.tr('suppliers.po_subtitle');
       default:
         return '';
     }
@@ -114,7 +114,7 @@ class _DashboardPageState extends State<DashboardPage> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Quick Action: "$actionLabel" tapped.'),
+                  content: Text(context.tr('dashboard.quick_action_tapped', args: {'action': actionLabel})),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -152,7 +152,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (_selectedIndex == 0) {
       return [
         IconButton(
-          tooltip: 'Switch business',
+          tooltip: context.tr('orgs.switch_business'),
           icon: const Icon(Icons.swap_horiz, color: AppColors.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),

@@ -3,17 +3,19 @@ import 'package:http/http.dart' as http;
 import 'api_constants.dart';
 import 'token_storage.dart';
 
-/// API Response wrapper containing status code, data, error message, and success flag.
+/// API Response wrapper containing status code, data, error message, error code, and success flag.
 class ApiResponse<T> {
   final int statusCode;
   final T? data;
   final String? errorMessage;
+  final String? errorCode;
   final bool isSuccess;
 
   ApiResponse({
     required this.statusCode,
     this.data,
     this.errorMessage,
+    this.errorCode,
     required this.isSuccess,
   });
 }
@@ -51,7 +53,13 @@ class ApiClient {
         ? (bodyData['message'] is List
               ? (bodyData['message'] as List).join(', ')
               : bodyData['message'].toString())
-        : response.reasonPhrase;
+        : (bodyData is Map && bodyData.containsKey('error')
+              ? bodyData['error'].toString()
+              : response.reasonPhrase);
+
+    final errorCode = (bodyData is Map && bodyData.containsKey('code'))
+        ? bodyData['code']?.toString()
+        : null;
 
     switch (statusCode) {
       case 200:
@@ -66,6 +74,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           data: parsed,
+          errorCode: errorCode,
           isSuccess: true,
         );
 
@@ -73,6 +82,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage: serverMessage ?? 'Bad request.',
+          errorCode: errorCode,
           isSuccess: false,
         );
 
@@ -84,6 +94,7 @@ class ApiClient {
           statusCode: statusCode,
           errorMessage:
               serverMessage ?? 'Session expired. Please log in again.',
+          errorCode: errorCode,
           isSuccess: false,
         );
 
@@ -91,6 +102,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage: 'Access denied. You do not have permission.',
+          errorCode: errorCode,
           isSuccess: false,
         );
 
@@ -98,6 +110,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage: 'Requested resource was not found.',
+          errorCode: errorCode,
           isSuccess: false,
         );
 
@@ -105,6 +118,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage: serverMessage ?? 'Validation error occurred.',
+          errorCode: errorCode,
           isSuccess: false,
         );
 
@@ -115,6 +129,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage: 'Server error ($statusCode). Please try again later.',
+          errorCode: errorCode,
           isSuccess: false,
         );
 
@@ -122,6 +137,7 @@ class ApiClient {
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage: serverMessage ?? 'Unexpected error ($statusCode).',
+          errorCode: errorCode,
           isSuccess: false,
         );
     }

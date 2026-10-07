@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../inventory/data/inventory_repository.dart';
 import '../../../pos/data/bills_repository.dart';
@@ -34,12 +35,12 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
   List<Map<String, dynamic>> _recentBills = [];
 
   static const _quickActions = [
-    (label: 'New Sale', icon: Icons.point_of_sale_outlined),
-    (label: 'Inventory', icon: Icons.inventory_outlined),
-    (label: 'Purchase Orders', icon: Icons.local_shipping_outlined),
-    (label: 'Reports', icon: Icons.bar_chart_outlined),
-    (label: 'Staff', icon: Icons.people_outline),
-    (label: 'Settings', icon: Icons.settings_outlined),
+    (key: 'dashboard.new_sale', label: 'New Sale', icon: Icons.point_of_sale_outlined),
+    (key: 'inventory.title', label: 'Inventory', icon: Icons.inventory_outlined),
+    (key: 'suppliers.purchase_orders', label: 'Purchase Orders', icon: Icons.local_shipping_outlined),
+    (key: 'dashboard.reports', label: 'Reports', icon: Icons.bar_chart_outlined),
+    (key: 'staff.title', label: 'Staff', icon: Icons.people_outline),
+    (key: 'settings.title', label: 'Settings', icon: Icons.settings_outlined),
   ];
 
   @override
@@ -105,18 +106,18 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
 
     final stats = [
       (
-        label: "Total Sales",
+        label: context.tr('dashboard.today_sales'),
         value: 'Rs. ${_todaySales.toStringAsFixed(_todaySales % 1 == 0 ? 0 : 2)}',
         icon: Icons.payments_outlined
       ),
       (
-        label: 'Orders',
+        label: context.tr('dashboard.total_orders'),
         value: '$_todayOrders',
         icon: Icons.receipt_long_outlined
       ),
       (
-        label: 'Products',
-        value: '$_productCount items',
+        label: context.tr('inventory.products'),
+        value: context.tr('dashboard.count_items', args: {'count': _productCount}),
         icon: Icons.inventory_2_outlined
       ),
     ];
@@ -175,7 +176,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                 const SizedBox(height: 28),
 
                 Text(
-                  'Quick actions',
+                  context.tr('dashboard.quick_actions'),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 14),
@@ -189,7 +190,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                   children: [
                     for (final action in _quickActions)
                       QuickActionTile(
-                        label: action.label,
+                        label: context.tr(action.key),
                         icon: action.icon,
                         onTap: () => widget.onQuickActionTap(action.label),
                       ),
@@ -201,7 +202,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Recent activity',
+                      context.tr('dashboard.recent_activity'),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     if (_isLoading)
@@ -235,7 +236,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'No recent transactions',
+                          context.tr('dashboard.no_recent_transactions'),
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
@@ -243,7 +244,7 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Sales processed in the POS terminal will appear here.',
+                          context.tr('dashboard.no_recent_transactions_hint'),
                           textAlign: TextAlign.center,
                           style: Theme.of(context)
                               .textTheme
@@ -266,10 +267,13 @@ class _DashboardHomeViewState extends State<DashboardHomeView> {
                       children: [
                         for (int i = 0; i < _recentBills.length; i++) ...[
                           ActivityRow(
-                            title: 'Sale #${_recentBills[i]['id']?.toString().substring(0, _recentBills[i]['id'].toString().length > 6 ? 6 : null) ?? "${i + 1}"}',
-                            subtitle:
-                                'Rs. ${_recentBills[i]['total_amount'] ?? _recentBills[i]['amount'] ?? "0"} · Completed',
-                            time: 'Recently',
+                            title: context.tr('dashboard.sale_num', args: {
+                              'id': _recentBills[i]['id']?.toString().substring(0, _recentBills[i]['id'].toString().length > 6 ? 6 : null) ?? '${i + 1}'
+                            }),
+                            subtitle: context.tr('dashboard.sale_completed_detail', args: {
+                              'amount': _recentBills[i]['total_amount']?.toString() ?? _recentBills[i]['amount']?.toString() ?? '0'
+                            }),
+                            time: context.tr('dashboard.recently'),
                           ),
                           if (i != _recentBills.length - 1)
                             Divider(

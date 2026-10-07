@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/cart_item.dart';
 
@@ -121,7 +122,7 @@ class _CartItemTileState extends State<CartItemTile> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${item.product.sku}  ·  Rs. ${item.unitPrice.toStringAsFixed(0)} ea',
+                        '${item.product.sku}  ·  Rs. ${item.unitPrice.toStringAsFixed(0)} ${context.tr('pos.each_ea')}',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
@@ -317,7 +318,7 @@ class _ItemDiscountRow extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'Item discount:',
+            context.tr('pos.item_discount'),
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -369,7 +370,7 @@ class _ItemDiscountRow extends StatelessWidget {
           const SizedBox(width: 10),
           if (saving > 0)
             Text(
-              '− Rs. ${saving.toStringAsFixed(0)} saved',
+              context.tr('pos.saved_amount', args: {'amount': saving.toStringAsFixed(0)}),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 11,
                     color: const Color(0xFF16A34A),

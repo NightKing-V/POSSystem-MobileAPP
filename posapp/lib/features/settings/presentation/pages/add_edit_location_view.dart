@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../Organisations/data/orgs_repository.dart';
 
@@ -64,7 +65,9 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEditing ? 'Location updated.' : 'Location created.'),
+          content: Text(_isEditing
+              ? context.tr('common.updated_success')
+              : context.tr('common.created_success')),
           backgroundColor: AppColors.inkTeal,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -73,7 +76,7 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res.errorMessage ?? 'Failed to save location.'),
+          content: Text(res.errorMessage ?? context.tr('common.error')),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -83,7 +86,7 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
 
   @override
   Widget build(BuildContext context) {
-    final formBody = SingleChildScrollView(
+    final formFields = SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Form(
         key: _formKey,
@@ -91,7 +94,7 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Location Details',
+              context.tr('locations.location_details'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -99,103 +102,123 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
                   ),
             ),
             const SizedBox(height: 14),
-            _Label('Name *'),
+            _Label(context.tr('locations.branch_name')),
             TextFormField(
               controller: _nameCtrl,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Main Branch, Outlet 2',
+              decoration: InputDecoration(
+                hintText: context.tr('locations.branch_name_hint'),
               ),
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Please enter a name'
+                  ? context.tr('locations.branch_name_required')
                   : null,
             ),
             const SizedBox(height: 16),
-            _Label('Address *'),
+            _Label('${context.tr('common.address')} (${context.tr('common.optional')})'),
             TextFormField(
               controller: _addressCtrl,
               maxLines: 2,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                hintText: 'Street, City',
+              decoration: InputDecoration(
+                hintText: context.tr('locations.address_hint'),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Please enter an address'
-                  : null,
             ),
             const SizedBox(height: 16),
-            _Label('Phone Number'),
+            _Label('${context.tr('common.phone')} (${context.tr('common.optional')})'),
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                hintText: '+94 77 123 4567',
+              decoration: InputDecoration(
+                hintText: context.tr('locations.phone_hint'),
               ),
-            ),
-            const SizedBox(height: 28),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.slate,
-                      side: const BorderSide(
-                        color: AppColors.hairline,
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.inkTeal,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      minimumSize: const Size(0, 52),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            _isEditing ? 'Save Changes' : 'Create Location',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
       ),
     );
 
+    final actionButtons = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.hairline.withValues(alpha: 0.8),
+            width: 1.2,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.slate,
+                side: const BorderSide(
+                  color: AppColors.hairline,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(0, 48),
+              ),
+              child: Text(context.tr('common.cancel')),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: _isSaving ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(0, 48),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      _isEditing
+                          ? context.tr('common.save')
+                          : context.tr('locations.add_location'),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Flexible(child: formFields),
+        actionButtons,
+      ],
+    );
+
     if (widget.isModal) {
-      return formBody;
+      return content;
     }
 
     return Scaffold(
@@ -205,11 +228,13 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? 'Edit Location' : 'Add Location',
+          _isEditing
+              ? context.tr('locations.edit_location')
+              : context.tr('locations.add_location'),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
-      body: SafeArea(child: formBody),
+      body: SafeArea(child: content),
     );
   }
 }

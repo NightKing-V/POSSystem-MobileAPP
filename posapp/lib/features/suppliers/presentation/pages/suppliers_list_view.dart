@@ -93,10 +93,10 @@ class _SuppliersListViewState extends State<SuppliersListView> {
     final isEditing = supplier != null;
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: isEditing ? 'Edit Supplier' : context.tr('suppliers.add_supplier'),
+      title: isEditing ? context.tr('suppliers.edit_supplier') : context.tr('suppliers.add_supplier'),
       subtitle: isEditing
           ? supplier.name
-          : 'Register a new vendor or stock supplier',
+          : context.tr('suppliers.register_supplier_subtitle'),
       leadingIcon: const Icon(Icons.local_shipping_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 640,
@@ -115,17 +115,17 @@ class _SuppliersListViewState extends State<SuppliersListView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Supplier'),
-        content: Text('Are you sure you want to remove "${supplier.name}"?'),
+        title: Text(context.tr('suppliers.delete_supplier_confirm')),
+        content: Text('${context.tr('common.confirm_delete_msg')} (${supplier.name})'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
@@ -137,7 +137,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Supplier "${supplier.name}" removed.'),
+            content: Text('${supplier.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -153,9 +153,8 @@ class _SuppliersListViewState extends State<SuppliersListView> {
       children: [
         ManagementHeaderBar(
           title: context.tr('suppliers.title'),
-          subtitle: 'Vendor & Supplier Directory',
-          itemCountText:
-              '${list.length} ${list.length == 1 ? 'supplier' : 'suppliers'}',
+          subtitle: context.tr('suppliers.subtitle'),
+          itemCountText: context.tr('suppliers.count_suppliers', args: {'count': '${list.length}'}),
           searchCtrl: _searchCtrl,
           searchHint: context.tr('common.search'),
           onSearchChanged: (v) => setState(() => _search = v),
@@ -184,7 +183,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
             onDelete: (s) => _handleDelete(s),
             columns: [
               ManagementTableColumn<SupplierProps>(
-                label: 'Supplier / Vendor',
+                label: context.tr('suppliers.supplier_name_header'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (s, _) => Row(
@@ -218,7 +217,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                 ),
               ),
               ManagementTableColumn<SupplierProps>(
-                label: 'Contact Person',
+                label: context.tr('suppliers.contact_person'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (s, _) => Text(
@@ -227,7 +226,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
                 ),
               ),
               ManagementTableColumn<SupplierProps>(
-                label: 'Phone & Email',
+                label: context.tr('suppliers.phone_email'),
                 flex: 3,
                 cellBuilder: (s, _) => Text(
                   s.phone ?? s.email ?? '—',
@@ -340,7 +339,7 @@ class _SuppliersListViewState extends State<SuppliersListView> {
               ).textTheme.titleMedium?.copyWith(fontSize: 17),
             ),
             Text(
-              '${list.length} suppliers',
+              context.tr('suppliers.count_suppliers', args: {'count': '${list.length}'}),
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(fontSize: 12),

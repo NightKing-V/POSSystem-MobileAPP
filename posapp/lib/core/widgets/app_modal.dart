@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 /// Screen width breakpoint separating Desktop (hovering dialog) from Tablet/Mobile (slide-in sheet).
@@ -308,7 +309,7 @@ class ResponsiveModalHeader extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Close',
+            tooltip: context.tr('common.close'),
             icon: const Icon(
               Icons.close_rounded,
               color: AppColors.slate,
@@ -379,16 +380,16 @@ class ResponsiveModalFooter extends StatelessWidget {
     super.key,
     required this.onSubmit,
     this.onCancel,
-    this.submitLabel = 'Save Changes',
-    this.cancelLabel = 'Cancel',
+    this.submitLabel,
+    this.cancelLabel,
     this.isLoading = false,
     this.submitColor,
   });
 
   final VoidCallback onSubmit;
   final VoidCallback? onCancel;
-  final String submitLabel;
-  final String cancelLabel;
+  final String? submitLabel;
+  final String? cancelLabel;
   final bool isLoading;
   final Color? submitColor;
 
@@ -411,7 +412,7 @@ class ResponsiveModalFooter extends StatelessWidget {
           TextButton(
             onPressed: onCancel ?? () => Navigator.of(context).pop(),
             child: Text(
-              cancelLabel,
+              cancelLabel ?? context.tr('common.cancel'),
               style: const TextStyle(
                 color: AppColors.slate,
                 fontWeight: FontWeight.w600,
@@ -440,7 +441,7 @@ class ResponsiveModalFooter extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    submitLabel,
+                    submitLabel ?? context.tr('common.save'),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
           ),

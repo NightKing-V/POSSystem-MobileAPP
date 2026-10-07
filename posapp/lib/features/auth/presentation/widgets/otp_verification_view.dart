@@ -1,31 +1,39 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_constants.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import './otp_box_input.dart';
 
 /// A reusable 6-box OTP verification widget used across auth flows
 /// (Signup email verification, Password reset, etc.).
+///
+/// Supports backend error payloads (OTP_EXPIRED, OTP_INVALID) and a real-time
+/// countdown timer with resend functionality when the code expires.
 class OtpVerificationView extends StatefulWidget {
   const OtpVerificationView({
     super.key,
     required this.email,
     required this.onVerify,
-    this.title = 'Verify your email',
+    this.title,
     this.subtitle,
-    this.buttonLabel = 'Verify and Continue',
+    this.buttonLabel,
     this.onResend,
     this.onBack,
     this.errorText,
+    this.expirySeconds,
     this.isLoading = false,
   });
 
   final String email;
   final Future<void> Function(String otp) onVerify;
-  final String title;
+  final String? title;
   final String? subtitle;
-  final String buttonLabel;
+  final String? buttonLabel;
   final Future<void> Function()? onResend;
   final VoidCallback? onBack;
   final String? errorText;
+  final int? expirySeconds;
   final bool isLoading;
 
   @override
@@ -34,20 +42,79 @@ class OtpVerificationView extends StatefulWidget {
 
 class _OtpVerificationViewState extends State<OtpVerificationView> {
   final _otpCtrl = TextEditingController();
+  Timer? _countdownTimer;
+  late int _remainingSeconds;
   bool _internalLoading = false;
+  bool _isResending = false;
   String? _inlineError;
+
+  int get _initialExpirySeconds =>
+      widget.expirySeconds ?? ApiConstants.otpExpirySeconds;
+
+  bool get _isExpired => _remainingSeconds <= 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingSeconds = _initialExpirySeconds;
+    _startTimer();
+  }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _otpCtrl.dispose();
     super.dispose();
+  }
+
+  void _startTimer() {
+    _countdownTimer?.cancel();
+    if (_remainingSeconds <= 0) return;
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_remainingSeconds > 1) {
+        setState(() => _remainingSeconds--);
+      } else {
+        setState(() {
+          _remainingSeconds = 0;
+          _inlineError = context.tr('auth.otp_expired');
+        });
+        timer.cancel();
+      }
+    });
+  }
+
+  String _formatDuration(int totalSeconds) {
+    if (totalSeconds <= 0) return '00:00';
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      final h = hours.toString().padLeft(2, '0');
+      final m = minutes.toString().padLeft(2, '0');
+      final s = seconds.toString().padLeft(2, '0');
+      return '$h:$m:$s';
+    } else {
+      final m = minutes.toString().padLeft(2, '0');
+      final s = seconds.toString().padLeft(2, '0');
+      return '$m:$s';
+    }
   }
 
   Future<void> _handleVerify([String? code]) async {
     final token = (code ?? _otpCtrl.text).trim();
     if (token.length < 6) {
       setState(() {
-        _inlineError = 'Please enter all 6 digits of the code.';
+        _inlineError = context.tr('auth.enter_otp');
+      });
+      return;
+    }
+
+    if (_isExpired) {
+      setState(() {
+        _inlineError = context.tr('auth.otp_expired');
       });
       return;
     }
@@ -61,9 +128,26 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       await widget.onVerify(token);
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _inlineError = e.toString().replaceFirst('Exception: ', '');
-        });
+        final errorMsg = e.toString().replaceFirst('Exception: ', '').trim();
+        if (errorMsg.contains('OTP_EXPIRED') ||
+            errorMsg.toLowerCase().contains('expired')) {
+          setState(() {
+            _inlineError = context.tr('auth.otp_expired');
+            _remainingSeconds = 0;
+            _countdownTimer?.cancel();
+          });
+        } else if (errorMsg.contains('OTP_INVALID') ||
+            errorMsg.toLowerCase().contains('invalid otp')) {
+          setState(() {
+            _inlineError = context.tr('auth.invalid_otp');
+          });
+        } else {
+          setState(() {
+            _inlineError = errorMsg.isNotEmpty
+                ? errorMsg
+                : context.tr('common.error');
+          });
+        }
       }
     } finally {
       if (mounted) {
@@ -74,10 +158,47 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     }
   }
 
+  Future<void> _handleResend() async {
+    if (widget.onResend == null || _isResending) return;
+
+    setState(() {
+      _isResending = true;
+      _inlineError = null;
+    });
+
+    try {
+      await widget.onResend!();
+      if (mounted) {
+        _otpCtrl.clear();
+        setState(() {
+          _remainingSeconds = _initialExpirySeconds;
+        });
+        _startTimer();
+      }
+    } catch (e) {
+      if (mounted) {
+        final errorMsg = e.toString().replaceFirst('Exception: ', '').trim();
+        setState(() {
+          _inlineError = errorMsg.isNotEmpty
+              ? errorMsg
+              : context.tr('common.error');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResending = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveLoading = widget.isLoading || _internalLoading;
     final effectiveError = widget.errorText ?? _inlineError;
+    final effectiveTitle = widget.title ?? context.tr('auth.verify_email');
+    final effectiveButtonLabel = widget.buttonLabel ?? context.tr('common.continue');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,7 +235,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         ),
         const SizedBox(height: 16),
         Text(
-          widget.title,
+          effectiveTitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             fontSize: 22,
@@ -124,7 +245,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         ),
         const SizedBox(height: 8),
         Text(
-          widget.subtitle ?? 'We sent a 6-digit code to\n${widget.email}',
+          widget.subtitle ?? context.tr('auth.otp_desc', args: {'email': widget.email}),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
@@ -160,10 +281,12 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: effectiveLoading ? null : () => _handleVerify(),
+            onPressed: effectiveLoading || _isExpired ? null : () => _handleVerify(),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.inkTeal,
               foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.hairline,
+              disabledForegroundColor: AppColors.slate,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -179,9 +302,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                     ),
                   )
                 : Text(
-                    widget.buttonLabel,
+                    _isExpired ? context.tr('auth.otp_expired') : effectiveButtonLabel,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: _isExpired ? AppColors.slate : Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -189,18 +312,48 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
           ),
         ),
         if (widget.onResend != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Center(
-            child: TextButton(
-              onPressed: effectiveLoading ? null : widget.onResend,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.inkTeal,
-              ),
-              child: const Text(
-                'Resend code',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
+            child: _isExpired
+                ? TextButton.icon(
+                    onPressed: effectiveLoading || _isResending ? null : _handleResend,
+                    icon: _isResending
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.inkTeal,
+                            ),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 18),
+                    label: Text(
+                      _isResending ? context.tr('common.loading') : context.tr('auth.resend_otp'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.inkTeal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.timer_outlined, size: 16, color: AppColors.slate),
+                      const SizedBox(width: 6),
+                      Text(
+                        context.tr('auth.resend_in', args: {'seconds': _formatDuration(_remainingSeconds)}),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontSize: 13,
+                          color: AppColors.slate,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ],

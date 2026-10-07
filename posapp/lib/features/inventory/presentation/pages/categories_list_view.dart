@@ -79,10 +79,12 @@ class _CategoriesListViewState extends State<CategoriesListView> {
   void _showAddCategoryModal([CategoryProps? cat]) async {
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: cat != null ? 'Edit Category' : context.tr('inventory.add_category'),
+      title: cat != null
+          ? context.tr('inventory.edit_category')
+          : context.tr('inventory.add_category'),
       subtitle: cat != null
           ? cat.name
-          : 'Create a new category for grouping products',
+          : context.tr('inventory.create_category_subtitle'),
       leadingIcon: const Icon(Icons.category_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 500,
@@ -97,17 +99,17 @@ class _CategoriesListViewState extends State<CategoriesListView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text('Are you sure you want to remove category "${cat.name}"?'),
+        title: Text(context.tr('inventory.delete_category_confirm')),
+        content: Text('${context.tr('common.confirm_delete_msg')} (${cat.name})'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
@@ -119,7 +121,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Category "${cat.name}" deleted.'),
+            content: Text('${cat.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -135,9 +137,8 @@ class _CategoriesListViewState extends State<CategoriesListView> {
       children: [
         ManagementHeaderBar(
           title: context.tr('inventory.categories'),
-          subtitle: 'Inventory Categories & Hierarchy',
-          itemCountText:
-              '${list.length} ${list.length == 1 ? 'category' : 'categories'}',
+          subtitle: context.tr('inventory.categories_subtitle'),
+          itemCountText: context.tr('inventory.count_categories', args: {'count': '${list.length}'}),
           searchCtrl: _searchCtrl,
           searchHint: context.tr('common.search'),
           onSearchChanged: (v) => setState(() => _search = v),
@@ -150,7 +151,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
             items: list,
             isLoading: _isLoading,
             emptyTitle: context.tr('inventory.no_categories'),
-            emptySubtitle: context.tr('inventory.no_products_hint'),
+            emptySubtitle: context.tr('inventory.no_categories_hint'),
             emptyIcon: Icons.category_outlined,
             enablePagination: true,
             rowsPerPage: 10,
@@ -166,7 +167,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
             onDelete: (c) => _handleDelete(c),
             columns: [
               ManagementTableColumn<CategoryProps>(
-                label: 'Category Name',
+                label: context.tr('inventory.category_name_header'),
                 flex: 4,
                 isSortable: true,
                 cellBuilder: (cat, _) => Row(
@@ -196,7 +197,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
                 ),
               ),
               ManagementTableColumn<CategoryProps>(
-                label: 'Hierarchy Level',
+                label: context.tr('inventory.hierarchy_level'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (cat, _) => Align(
@@ -210,7 +211,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
                       border: Border.all(color: AppColors.hairline),
                     ),
                     child: Text(
-                      'Level ${cat.level}',
+                      context.tr('inventory.level_num', args: {'level': '${cat.level}'}),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -269,7 +270,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Level ${cat.level}',
+                              context.tr('inventory.level_num', args: {'level': '${cat.level}'}),
                               style: const TextStyle(
                                 color: AppColors.slate,
                                 fontSize: 12,
@@ -322,7 +323,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${list.length} categories',
+            Text(context.tr('inventory.count_categories', args: {'count': '${list.length}'}),
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium

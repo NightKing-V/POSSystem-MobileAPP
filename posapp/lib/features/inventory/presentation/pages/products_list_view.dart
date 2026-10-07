@@ -92,10 +92,12 @@ class _ProductsListViewState extends State<ProductsListView> {
     final isEditing = product != null;
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: isEditing ? 'Edit Product' : context.tr('inventory.add_product'),
+      title: isEditing
+          ? context.tr('inventory.edit_product')
+          : context.tr('inventory.add_product'),
       subtitle: isEditing
           ? product.name
-          : 'Add new product item to inventory catalog',
+          : context.tr('inventory.add_product_subtitle'),
       leadingIcon: const Icon(Icons.add_shopping_cart,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 680,
@@ -110,17 +112,17 @@ class _ProductsListViewState extends State<ProductsListView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Product'),
-        content: Text('Are you sure you want to remove "${p.name}"?'),
+        title: Text(context.tr('inventory.delete_product_confirm')),
+        content: Text('${context.tr('common.confirm_delete_msg')} (${p.name})'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
@@ -132,7 +134,7 @@ class _ProductsListViewState extends State<ProductsListView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Product "${p.name}" deleted.'),
+            content: Text('${p.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -148,9 +150,8 @@ class _ProductsListViewState extends State<ProductsListView> {
       children: [
         ManagementHeaderBar(
           title: context.tr('inventory.products'),
-          subtitle: 'Product Catalog & Inventory',
-          itemCountText:
-              '${list.length} ${list.length == 1 ? 'product' : 'products'}',
+          subtitle: context.tr('inventory.subtitle'),
+          itemCountText: context.tr('inventory.count_products', args: {'count': '${list.length}'}),
           searchCtrl: _searchCtrl,
           searchHint: context.tr('common.search'),
           onSearchChanged: (v) => setState(() => _search = v),
@@ -179,7 +180,7 @@ class _ProductsListViewState extends State<ProductsListView> {
             onDelete: (p) => _handleDelete(p),
             columns: [
               ManagementTableColumn<Product>(
-                label: 'Product Name',
+                label: context.tr('inventory.product_name_header'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (p, _) => Row(
@@ -213,7 +214,7 @@ class _ProductsListViewState extends State<ProductsListView> {
                 ),
               ),
               ManagementTableColumn<Product>(
-                label: 'SKU',
+                label: context.tr('inventory.sku'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (p, _) => Text(
@@ -222,7 +223,7 @@ class _ProductsListViewState extends State<ProductsListView> {
                 ),
               ),
               ManagementTableColumn<Product>(
-                label: 'Category',
+                label: context.tr('inventory.category'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (p, _) => Container(
@@ -243,7 +244,7 @@ class _ProductsListViewState extends State<ProductsListView> {
                 ),
               ),
               ManagementTableColumn<Product>(
-                label: 'Unit Price',
+                label: context.tr('inventory.price'),
                 flex: 2,
                 isSortable: true,
                 alignment: Alignment.centerRight,
@@ -366,7 +367,7 @@ class _ProductsListViewState extends State<ProductsListView> {
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 17)),
-            Text('${list.length} products',
+            Text(context.tr('inventory.count_products', args: {'count': '${list.length}'}),
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium

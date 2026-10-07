@@ -57,7 +57,7 @@ class Sidebar extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
                   child: Text(
-                    'MANAGEMENT',
+                    context.tr('dashboard.management'),
                     style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
@@ -158,7 +158,7 @@ class Sidebar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Store Admin · Active Session',
+            context.tr('dashboard.store_admin_active_session'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.slate,
                 ),

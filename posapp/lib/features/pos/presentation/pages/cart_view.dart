@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/api/token_storage.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../../customers/data/customers_repository.dart';
@@ -148,8 +149,8 @@ class _CartViewState extends State<CartView> {
 
   void _onScanTap() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Barcode scanner opened'),
+      SnackBar(
+        content: Text(context.tr('pos.barcode_scanner_opened')),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -160,13 +161,13 @@ class _CartViewState extends State<CartView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Bill with ${_cartItems.length} items put on hold',
+          context.tr('pos.hold_bill_msg', args: {'count': '${_cartItems.length}'}),
           style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: AppColors.inkTeal,
         behavior: SnackBarBehavior.floating,
         action: SnackBarAction(
-          label: 'Undo',
+          label: context.tr('pos.undo'),
           textColor: Colors.white,
           onPressed: () {},
         ),
@@ -181,15 +182,15 @@ class _CartViewState extends State<CartView> {
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear Cart',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text(
-          'Are you sure you want to remove all items from the current bill?',
+        title: Text(context.tr('pos.clear_cart_title'),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(
+          context.tr('pos.clear_bill_confirm'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.slate)),
+            child: Text(context.tr('common.cancel'), style: const TextStyle(color: AppColors.slate)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -204,7 +205,7 @@ class _CartViewState extends State<CartView> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Clear', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(context.tr('common.clear'), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -283,7 +284,7 @@ class _CartViewState extends State<CartView> {
     } else {
       ApiHelper.showErrorSnackBar(
         context,
-        response.errorMessage ?? 'Failed to complete sale.',
+        response.errorMessage ?? context.tr('common.error'),
       );
     }
   }
@@ -313,13 +314,13 @@ class _CartViewState extends State<CartView> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Payment Successful',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.tr('pos.payment_successful'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              'Receipt $billNum',
+              context.tr('pos.receipt_num', args: {'num': billNum}),
               style: const TextStyle(fontSize: 13, color: AppColors.slate),
             ),
             const SizedBox(height: 16),
@@ -332,8 +333,8 @@ class _CartViewState extends State<CartView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Amount Paid',
-                      style: TextStyle(color: AppColors.slate)),
+                  Text(context.tr('pos.amount_paid'),
+                      style: const TextStyle(color: AppColors.slate)),
                   Text(
                     'Rs. ${total.toStringAsFixed(2)}',
                     style: const TextStyle(
@@ -358,8 +359,8 @@ class _CartViewState extends State<CartView> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text('Done',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(context.tr('common.done'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ],

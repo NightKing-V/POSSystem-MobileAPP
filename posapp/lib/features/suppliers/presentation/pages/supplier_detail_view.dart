@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
 import '../../data/suppliers_repository.dart';
@@ -109,7 +110,7 @@ class _SupplierDetailViewState extends State<SupplierDetailView>
             icon: const Icon(Icons.edit_outlined, color: AppColors.inkTeal),
             onPressed: () => showResponsiveModal<bool>(
               context: context,
-              title: 'Edit Supplier',
+              title: context.tr('suppliers.edit_supplier'),
               subtitle: widget.vendor.name,
               leadingIcon: const Icon(Icons.business_outlined, color: AppColors.inkTeal, size: 20),
               maxWidth: 580,
@@ -156,8 +157,8 @@ class _SupplierDetailViewState extends State<SupplierDetailView>
                           BorderSide(color: AppColors.inkTeal, width: 2.5),
                     ),
                     tabs: [
-                      Tab(text: 'Linked Products (${_links.length})'),
-                      Tab(text: 'Purchase Orders (${_orders.length})'),
+                      Tab(text: context.tr('suppliers.linked_products_tab', args: {'count': '${_links.length}'})),
+                      Tab(text: context.tr('suppliers.purchase_orders_tab', args: {'count': '${_orders.length}'})),
                     ],
                   ),
                 ),
@@ -329,7 +330,7 @@ class _LinkedProductsTabState extends State<_LinkedProductsTab> {
           Padding(
             padding: const EdgeInsets.only(top: 32),
             child: Center(
-              child: Text('No linked products yet.',
+              child: Text(context.tr('suppliers.no_linked_products'),
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -346,7 +347,7 @@ class _LinkedProductsTabState extends State<_LinkedProductsTab> {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           icon: const Icon(Icons.link, size: 16),
-          label: const Text('Link a product'),
+          label: Text(context.tr('suppliers.link_a_product')),
           onPressed: () => LinkProductVendorView.show(
             context,
             vendorId: widget.vendorId,
@@ -393,7 +394,7 @@ class _LinkedProductTile extends StatelessWidget {
                 Text(product?.name ?? link.productId,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 13)),
-                Text('Vendor code: ${link.vendorProductCode}',
+                Text(context.tr('suppliers.vendor_code_prefix', args: {'code': link.vendorProductCode}),
                     style: const TextStyle(
                         fontSize: 11, color: AppColors.slate)),
               ],
@@ -476,7 +477,7 @@ class _PurchaseOrdersTabState extends State<_PurchaseOrdersTab> {
           Padding(
             padding: const EdgeInsets.only(top: 32),
             child: Center(
-              child: Text('No purchase orders for this supplier.',
+              child: Text(context.tr('suppliers.no_po_for_supplier'),
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -513,11 +514,11 @@ class _PurchaseOrdersTabState extends State<_PurchaseOrdersTab> {
         const SizedBox(height: 12),
         ElevatedButton.icon(
           icon: const Icon(Icons.add, size: 16),
-          label: const Text('New Purchase Order'),
+          label: Text(context.tr('suppliers.new_po')),
           onPressed: () async {
             final res = await showResponsiveModal<bool>(
               context: context,
-              title: 'New Purchase Order',
+              title: context.tr('suppliers.new_po'),
               subtitle: widget.vendor.name,
               leadingIcon: const Icon(Icons.receipt_long_rounded, color: AppColors.inkTeal, size: 20),
               maxWidth: 680,
@@ -553,7 +554,7 @@ class _PoHistoryTile extends StatelessWidget {
           ? () async {
               final res = await showResponsiveModal<bool>(
                 context: context,
-                title: 'Receive Goods',
+                title: context.tr('suppliers.receive_po'),
                 subtitle: po.id,
                 leadingIcon: const Icon(Icons.inventory_2_outlined, color: AppColors.inkTeal, size: 20),
                 maxWidth: 680,

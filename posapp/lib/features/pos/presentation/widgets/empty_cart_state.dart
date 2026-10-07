@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// Empty cart placeholder illustration and message.
@@ -28,7 +29,7 @@ class EmptyCartState extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Cart is empty',
+              context.tr('pos.empty_cart'),
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
@@ -36,7 +37,7 @@ class EmptyCartState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Scan or search a product to\nstart billing',
+              context.tr('pos.empty_cart_hint'),
               textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme

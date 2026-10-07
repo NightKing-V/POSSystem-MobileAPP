@@ -93,7 +93,7 @@ class PaymentBar extends StatelessWidget {
             children: [
               // Hold bill
               _GhostBtn(
-                label: 'Hold',
+                label: context.tr('pos.hold'),
                 icon: Icons.pause_circle_outline_rounded,
                 color: AppColors.slate,
                 enabled: hasItems,

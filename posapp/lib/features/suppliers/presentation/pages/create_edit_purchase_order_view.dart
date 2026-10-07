@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../Organisations/data/orgs_repository.dart';
 import '../../../inventory/domain/models/product.dart';
@@ -147,11 +148,11 @@ class _CreateEditPurchaseOrderViewState
 
   Future<void> _submitPO({required bool isDraft}) async {
     if (_selectedVendorId == null || _selectedVendorId!.isEmpty) {
-      _showSnackbar('Please select a supplier.', isError: true);
+      _showSnackbar(context.tr('suppliers.select_vendor'), isError: true);
       return;
     }
     if (_lines.isEmpty) {
-      _showSnackbar('Add at least one line item.', isError: true);
+      _showSnackbar(context.tr('suppliers.add_item_to_po'), isError: true);
       return;
     }
 
@@ -175,13 +176,13 @@ class _CreateEditPurchaseOrderViewState
     if (!mounted) return;
 
     if (!res.isSuccess) {
-      _showSnackbar(res.errorMessage ?? 'Failed to save purchase order.');
+      _showSnackbar(res.errorMessage ?? context.tr('common.error'));
       return;
     }
 
     if (isDraft) {
       Navigator.of(context).pop(true);
-      _showSnackbar('Purchase order saved as draft.');
+      _showSnackbar(context.tr('suppliers.saved_draft'));
     } else {
       showDialog(
         context: context,
@@ -206,17 +207,17 @@ class _CreateEditPurchaseOrderViewState
               ),
               const SizedBox(height: 14),
               Text(
-                'Order Sent!',
+                context.tr('suppliers.order_sent_title'),
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'The purchase order has been successfully created and sent.',
+              Text(
+                context.tr('suppliers.order_sent_desc'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppColors.slate),
+                style: const TextStyle(fontSize: 13, color: AppColors.slate),
               ),
             ],
           ),
@@ -236,9 +237,9 @@ class _CreateEditPurchaseOrderViewState
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Done',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  context.tr('common.done'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -263,7 +264,6 @@ class _CreateEditPurchaseOrderViewState
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final content = Align(
       alignment: Alignment.topCenter,
@@ -277,18 +277,18 @@ class _CreateEditPurchaseOrderViewState
                 children: [
                   // ── Header card (vendor, location, date) ──────────────────
                   _SectionCard(
-                    title: 'Order details',
+                    title: context.tr('suppliers.order_details'),
                     children: [
-                      _Label('Vendor *'),
+                      _Label(context.tr('suppliers.vendor_label')),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedVendorId,
-                        hint: const Text('Select a vendor'),
+                        hint: Text(context.tr('suppliers.select_vendor')),
                         decoration: const InputDecoration(),
                         items: _vendorsList.isEmpty
                             ? [
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: null,
-                                  child: Text('No suppliers available'),
+                                  child: Text(context.tr('suppliers.no_suppliers')),
                                 ),
                               ]
                             : _vendorsList
@@ -302,15 +302,15 @@ class _CreateEditPurchaseOrderViewState
                         onChanged: (v) => setState(() => _selectedVendorId = v),
                       ),
                       const SizedBox(height: 16),
-                      _Label('Delivery Location *'),
+                      _Label(context.tr('suppliers.delivery_location')),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedLocationId,
                         decoration: const InputDecoration(),
                         items: _locationsList.isEmpty
                             ? [
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: 'main_branch',
-                                  child: Text('Main Branch'),
+                                  child: Text(context.tr('locations.default_branch')),
                                 ),
                               ]
                             : _locationsList
@@ -324,7 +324,7 @@ class _CreateEditPurchaseOrderViewState
                         onChanged: (v) => setState(() => _selectedLocationId = v),
                       ),
                       const SizedBox(height: 16),
-                      _Label('Expected Delivery Date'),
+                      _Label(context.tr('suppliers.expected_delivery_date')),
                       GestureDetector(
                         onTap: _pickDate,
                         child: Container(
@@ -363,7 +363,7 @@ class _CreateEditPurchaseOrderViewState
 
                   // ── Products / Line items ─────────────────────────────────
                   _SectionCard(
-                    title: 'Line items',
+                    title: context.tr('suppliers.line_items'),
                     children: [
                       if (_lines.isEmpty)
                         Container(
@@ -378,7 +378,7 @@ class _CreateEditPurchaseOrderViewState
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'No products added yet',
+                                context.tr('suppliers.no_products_added'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -402,7 +402,7 @@ class _CreateEditPurchaseOrderViewState
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
                         icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Add product'),
+                        label: Text(context.tr('suppliers.link_a_product')),
                         onPressed: () => PoProductPickerSheet.show(
                           context,
                           onSelect: _addLine,
@@ -429,14 +429,14 @@ class _CreateEditPurchaseOrderViewState
 
                   // ── Note / Remarks ────────────────────────────────────────
                   _SectionCard(
-                    title: 'Notes & Instructions',
+                    title: context.tr('suppliers.notes_instructions'),
                     children: [
                       TextFormField(
                         controller: _noteCtrl,
                         maxLines: 3,
                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          hintText: 'Internal note (optional)',
+                        decoration: InputDecoration(
+                          hintText: context.tr('suppliers.internal_note_hint'),
                         ),
                       ),
                     ],
@@ -464,7 +464,7 @@ class _CreateEditPurchaseOrderViewState
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? 'Edit Purchase Order' : 'New Purchase Order',
+          _isEditing ? context.tr('suppliers.edit_po') : context.tr('suppliers.new_po'),
           style:
               Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
@@ -495,7 +495,7 @@ class _OrderTotalCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Order Total',
+            context.tr('suppliers.order_total'),
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -550,9 +550,9 @@ class _ActionBar extends StatelessWidget {
                 ),
                 minimumSize: const Size(0, 50),
               ),
-              child: const Text(
-                'Save as Draft',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              child: Text(
+                context.tr('suppliers.save_draft'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -561,9 +561,9 @@ class _ActionBar extends StatelessWidget {
             flex: 2,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text(
-                'Send Order',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              label: Text(
+                context.tr('suppliers.send_order'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               onPressed: onSend,
               style: ElevatedButton.styleFrom(

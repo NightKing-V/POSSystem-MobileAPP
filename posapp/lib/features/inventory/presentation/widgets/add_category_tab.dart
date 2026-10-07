@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/category_repository.dart';
 
@@ -84,25 +86,11 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
       widget.onCategoryAdded();
       await _refresh();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle_outline, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Category created!'),
-          ]),
-          backgroundColor: AppColors.inkTeal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      ApiHelper.showSuccessSnackBar(context, context.tr('common.created_success'));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.errorMessage ?? 'Failed to create category.'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      ApiHelper.showErrorSnackBar(
+        context,
+        res.errorMessage ?? context.tr('common.error'),
       );
     }
   }
@@ -131,32 +119,32 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Category details',
+                      Text(context.tr('inventory.add_category'),
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
                               ?.copyWith(fontSize: 18)),
                       const SizedBox(height: 20),
 
-                      _Label('Category Name *'),
+                      _Label(context.tr('inventory.category_name')),
                       TextFormField(
                         controller: _nameCtrl,
                         textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                            hintText: 'e.g. Dairy, Bakery, Electronics'),
+                        decoration: InputDecoration(
+                            hintText: context.tr('inventory.category_name_hint')),
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Please enter category name';
+                            return context.tr('inventory.category_name_required');
                           }
                           if (_categories.any((c) => c.name.toLowerCase() == v.trim().toLowerCase())) {
-                            return 'A category with this name already exists';
+                            return context.tr('inventory.category_name_required');
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 20),
 
-                      _Label('Colour'),
+                      _Label(context.tr('inventory.category')),
                       _SwatchRow(
                         selected: _selectedSwatch,
                         onSelect: (i) => setState(() => _selectedSwatch = i),
@@ -176,7 +164,7 @@ class _AddCategoryTabState extends State<AddCategoryTab> {
                                 borderRadius: BorderRadius.circular(8)),
                           ),
                           child: Text(
-                            'Create Category',
+                            context.tr('common.save'),
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -265,7 +253,7 @@ class _ExistingCategoriesList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Existing categories',
+          Text(context.tr('inventory.categories'),
               style: Theme.of(context)
                   .textTheme
                   .titleMedium

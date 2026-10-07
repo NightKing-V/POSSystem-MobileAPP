@@ -91,10 +91,10 @@ class _CustomersListViewState extends State<CustomersListView> {
   void _openAddCustomer([CustomerProps? customer]) async {
     final res = await showResponsiveModal<bool>(
       context: context,
-      title: customer != null ? 'Edit Customer' : context.tr('customers.add_customer'),
+      title: customer != null ? context.tr('customers.edit_customer') : context.tr('customers.add_customer'),
       subtitle: customer != null
           ? customer.fullName
-          : 'Register a new customer for loyalty & billing',
+          : context.tr('customers.register_customer_subtitle'),
       leadingIcon: const Icon(Icons.person_add_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 620,
@@ -109,17 +109,17 @@ class _CustomersListViewState extends State<CustomersListView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Customer'),
-        content: Text('Are you sure you want to remove "${customer.fullName}"?'),
+        title: Text(context.tr('common.confirm_delete_title')),
+        content: Text(context.tr('customers.delete_customer_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('common.cancel')),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.tr('common.delete')),
           ),
         ],
       ),
@@ -131,7 +131,7 @@ class _CustomersListViewState extends State<CustomersListView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Customer "${customer.fullName}" deleted.'),
+            content: Text(context.tr('common.deleted_success')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -147,9 +147,8 @@ class _CustomersListViewState extends State<CustomersListView> {
       children: [
         ManagementHeaderBar(
           title: context.tr('customers.title'),
-          subtitle: 'Customer Directory & Loyalty Management',
-          itemCountText:
-              '${list.length} ${list.length == 1 ? 'customer' : 'customers'}',
+          subtitle: context.tr('customers.subtitle'),
+          itemCountText: context.tr('customers.count_customers', args: {'count': list.length}),
           searchCtrl: _searchCtrl,
           searchHint: context.tr('customers.search_customers'),
           onSearchChanged: (v) => setState(() => _search = v),
@@ -178,7 +177,7 @@ class _CustomersListViewState extends State<CustomersListView> {
             onDelete: (c) => _handleDelete(c),
             columns: [
               ManagementTableColumn<CustomerProps>(
-                label: 'Customer Name',
+                label: context.tr('customers.name'),
                 flex: 3,
                 isSortable: true,
                 cellBuilder: (c, _) => Row(
@@ -214,7 +213,7 @@ class _CustomersListViewState extends State<CustomersListView> {
                 ),
               ),
               ManagementTableColumn<CustomerProps>(
-                label: 'Phone Number',
+                label: context.tr('customers.phone'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (c, _) => Text(
@@ -223,7 +222,7 @@ class _CustomersListViewState extends State<CustomersListView> {
                 ),
               ),
               ManagementTableColumn<CustomerProps>(
-                label: 'Email Address',
+                label: context.tr('customers.email'),
                 flex: 2,
                 isSortable: true,
                 cellBuilder: (c, _) => Text(
@@ -232,7 +231,7 @@ class _CustomersListViewState extends State<CustomersListView> {
                 ),
               ),
               ManagementTableColumn<CustomerProps>(
-                label: 'Loyalty Points',
+                label: context.tr('customers.loyalty_points'),
                 flex: 2,
                 isSortable: true,
                 alignment: Alignment.centerRight,

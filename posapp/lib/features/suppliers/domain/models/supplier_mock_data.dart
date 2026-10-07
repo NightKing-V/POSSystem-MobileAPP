@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../inventory/domain/models/product.dart';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -5,6 +7,16 @@ import '../../../inventory/domain/models/product.dart';
 enum PurchaseOrderStatus { draft, sent, partiallyReceived, received, cancelled }
 
 extension PurchaseOrderStatusX on PurchaseOrderStatus {
+  String localizedLabel(BuildContext context) {
+    switch (this) {
+      case PurchaseOrderStatus.draft:             return context.tr('suppliers.status_draft');
+      case PurchaseOrderStatus.sent:              return context.tr('suppliers.status_sent');
+      case PurchaseOrderStatus.partiallyReceived: return context.tr('suppliers.status_partial');
+      case PurchaseOrderStatus.received:          return context.tr('suppliers.status_received');
+      case PurchaseOrderStatus.cancelled:         return context.tr('suppliers.status_cancelled');
+    }
+  }
+
   String get label {
     switch (this) {
       case PurchaseOrderStatus.draft:            return 'Draft';

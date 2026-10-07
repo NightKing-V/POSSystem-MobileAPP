@@ -29,7 +29,7 @@ class StatusBadge extends StatelessWidget {
         border: Border.all(color: color.withAlpha(70), width: 1),
       ),
       child: Text(
-        status.label,
+        status.localizedLabel(context),
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
