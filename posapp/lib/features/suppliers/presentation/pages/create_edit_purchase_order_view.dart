@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/form_field_label.dart';
 import '../../../Organisations/data/orgs_repository.dart';
 import '../../../inventory/domain/models/product.dart';
 import '../../data/suppliers_repository.dart';
@@ -279,7 +280,10 @@ class _CreateEditPurchaseOrderViewState
                   _SectionCard(
                     title: context.tr('suppliers.order_details'),
                     children: [
-                      _Label(context.tr('suppliers.vendor_label')),
+                      FormFieldLabel(
+                        label: context.tr('suppliers.vendor_label'),
+                        isRequired: true,
+                      ),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedVendorId,
                         hint: Text(context.tr('suppliers.select_vendor')),
@@ -302,7 +306,9 @@ class _CreateEditPurchaseOrderViewState
                         onChanged: (v) => setState(() => _selectedVendorId = v),
                       ),
                       const SizedBox(height: 16),
-                      _Label(context.tr('suppliers.delivery_location')),
+                      FormFieldLabel(
+                        label: context.tr('suppliers.delivery_location'),
+                      ),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedLocationId,
                         decoration: const InputDecoration(),
@@ -324,7 +330,10 @@ class _CreateEditPurchaseOrderViewState
                         onChanged: (v) => setState(() => _selectedLocationId = v),
                       ),
                       const SizedBox(height: 16),
-                      _Label(context.tr('suppliers.expected_delivery_date')),
+                      FormFieldLabel(
+                        label: context.tr('suppliers.expected_delivery_date'),
+                        isRequired: true,
+                      ),
                       GestureDetector(
                         onTap: _pickDate,
                         child: Container(
@@ -614,27 +623,6 @@ class _SectionCard extends StatelessWidget {
           const SizedBox(height: 16),
           ...children,
         ],
-      ),
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
       ),
     );
   }

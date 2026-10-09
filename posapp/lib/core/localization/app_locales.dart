@@ -25,8 +25,8 @@ class AppLocales {
     AppLanguage(
       code: 'en',
       name: 'English',
-      nativeName: 'English (US)',
-      flagEmoji: '🇬🇧',
+      nativeName: 'English',
+      flagEmoji: '🇺🇸',
     ),
     AppLanguage(
       code: 'si',

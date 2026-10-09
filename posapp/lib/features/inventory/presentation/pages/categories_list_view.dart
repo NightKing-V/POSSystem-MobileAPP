@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
@@ -88,7 +89,7 @@ class _CategoriesListViewState extends State<CategoriesListView> {
       leadingIcon: const Icon(Icons.category_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 500,
-      builder: (_) => const AddCategoryView(isModal: true),
+      builder: (_) => AddCategoryView(isModal: true, category: cat),
     );
     if (res == true) {
       _loadCategories();
@@ -114,16 +115,23 @@ class _CategoriesListViewState extends State<CategoriesListView> {
         ],
       ),
     );
+
     if (confirm == true) {
-      setState(() {
-        _categories.removeWhere((c) => c.id == cat.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${cat.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final res = await _inventoryRepo.deleteCategory(cat.id);
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        setState(() {
+          _categories.removeWhere((c) => c.id == cat.id);
+        });
+        ApiHelper.showSuccessSnackBar(
+          context,
+          '${cat.name} ${context.tr('common.deleted_success').toLowerCase()}.',
+        );
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          res.errorMessage ?? context.tr('common.error'),
         );
       }
     }

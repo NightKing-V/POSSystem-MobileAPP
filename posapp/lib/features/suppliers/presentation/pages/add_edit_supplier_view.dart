@@ -3,7 +3,11 @@ import 'package:posapp/features/suppliers/domain/models/supplier_mock_data.dart'
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
+import '../../../../core/widgets/phone_input_field.dart';
 import '../../data/suppliers_repository.dart';
+import '../validators/supplier_validators.dart';
 
 class AddEditSupplierView extends StatefulWidget {
   const AddEditSupplierView({
@@ -90,7 +94,10 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
           : null,
     );
 
-    final res = await _suppliersRepo.createSupplier(dto);
+    final id = widget.supplier?.id ?? widget.vendor?.id;
+    final res = (_isEditing && id != null && id.isNotEmpty)
+        ? await _suppliersRepo.updateSupplier(id, dto.toJson())
+        : await _suppliersRepo.createSupplier(dto);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -127,43 +134,36 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                   ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel(context.tr('suppliers.supplier_name')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('suppliers.supplier_name'),
+              isRequired: true,
               controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: context.tr('suppliers.supplier_name_hint'),
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? context.tr('suppliers.supplier_name_required')
-                  : null,
+              hintText: context.tr('suppliers.supplier_name_hint'),
+              validator: SupplierValidators.supplierName.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel(context.tr('suppliers.contact_person')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('suppliers.contact_person'),
+              isRequired: false,
               controller: _contactCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: context.tr('suppliers.contact_person_hint'),
-              ),
+              hintText: context.tr('suppliers.contact_person_hint'),
+              validator: SupplierValidators.contactPerson.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel('${context.tr('common.phone')} (${context.tr('common.optional')})'),
-            TextFormField(
+            FormFieldLabel(label: context.tr('common.phone')),
+            PhoneInputField(
               controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                hintText: context.tr('customers.phone_hint'),
-              ),
+              isRequired: false,
+              hintText: context.tr('customers.phone_hint'),
             ),
             const SizedBox(height: 16),
-            _FieldLabel('${context.tr('common.email')} (${context.tr('common.optional')})'),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('common.email'),
+              isRequired: false,
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                hintText: context.tr('customers.email_hint'),
-              ),
+              hintText: context.tr('customers.email_hint'),
+              validator: SupplierValidators.email.validate,
             ),
             const SizedBox(height: 20),
             const Divider(color: AppColors.hairline, height: 1),
@@ -177,21 +177,21 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
                   ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel('${context.tr('common.address')} (${context.tr('common.optional')})'),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('common.address'),
+              isRequired: false,
               controller: _addressCtrl,
-              decoration: InputDecoration(
-                hintText: context.tr('customers.address_hint'),
-              ),
+              hintText: context.tr('customers.address_hint'),
+              validator: SupplierValidators.address.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel('${context.tr('common.description')} (${context.tr('common.optional')})'),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('common.description'),
+              isRequired: false,
               controller: _notesCtrl,
               maxLines: 3,
-              decoration: InputDecoration(
-                hintText: context.tr('suppliers.no_suppliers_hint'),
-              ),
+              hintText: context.tr('suppliers.no_suppliers_hint'),
+              validator: SupplierValidators.notes.validate,
             ),
           ],
         ),
@@ -294,27 +294,6 @@ class _AddEditSupplierViewState extends State<AddEditSupplierView> {
         ),
       ),
       body: SafeArea(child: content),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: AppColors.ink,
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
-        ),
-      ),
     );
   }
 }

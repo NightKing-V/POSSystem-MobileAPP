@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/permissions/permissions_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../customers/presentation/pages/customers_list_view.dart';
 import '../../../inventory/presentation/pages/categories_list_view.dart';
@@ -33,6 +35,15 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final effectiveOrgId = widget.orgId ?? TokenStorage.currentOrgId;
+    if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+      PermissionsService().fetchAndCachePermissions(effectiveOrgId);
+    }
+  }
 
   String _getAppBarTitle(BuildContext context) {
     switch (_selectedIndex) {

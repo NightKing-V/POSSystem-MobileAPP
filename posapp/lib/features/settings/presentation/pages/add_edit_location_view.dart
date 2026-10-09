@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
+import '../../../../core/widgets/phone_input_field.dart';
 import '../../../Organisations/data/orgs_repository.dart';
+import '../../../inventory/data/inventory_repository.dart';
+import '../validators/location_validators.dart';
 
 class AddEditLocationView extends StatefulWidget {
-  const AddEditLocationView({
-    super.key,
-    this.location,
-    this.isModal = true,
-  });
+  const AddEditLocationView({super.key, this.location, this.isModal = true});
 
   final LocationProps? location;
   final bool isModal;
@@ -18,7 +21,7 @@ class AddEditLocationView extends StatefulWidget {
 }
 
 class _AddEditLocationViewState extends State<AddEditLocationView> {
-  final _orgsRepo = OrgsRepository();
+  final _inventoryRepo = InventoryRepository();
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _addressCtrl;
@@ -49,37 +52,40 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
 
     setState(() => _isSaving = true);
 
-    final dto = CreateOrgDto(
-      businessName: _nameCtrl.text.trim(),
-      businessType: 'BRANCH',
-      address: _addressCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-    );
+    ApiResponse<Map<String, dynamic>> res;
 
-    final res = await _orgsRepo.createOrganization(dto);
+    if (_isEditing) {
+      res = await _inventoryRepo.updateLocation(widget.location!.id, {
+        'name': _nameCtrl.text.trim(),
+        'address': _addressCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+      });
+    } else {
+      final dto = CreateInventoryLocationDto(
+        name: _nameCtrl.text.trim(),
+        type: 'BRANCH',
+        address: _addressCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+      );
+      res = await _inventoryRepo.createLocation(dto);
+    }
+
     if (!mounted) return;
 
     setState(() => _isSaving = false);
 
     if (res.isSuccess) {
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isEditing
-              ? context.tr('common.updated_success')
-              : context.tr('common.created_success')),
-          backgroundColor: AppColors.inkTeal,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      ApiHelper.showSuccessSnackBar(
+        context,
+        _isEditing
+            ? context.tr('common.updated_success')
+            : context.tr('common.created_success'),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.errorMessage ?? context.tr('common.error')),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      ApiHelper.showErrorSnackBar(
+        context,
+        res.errorMessage ?? context.tr('common.error'),
       );
     }
   }
@@ -96,41 +102,34 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
             Text(
               context.tr('locations.location_details'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 14),
-            _Label(context.tr('locations.branch_name')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('locations.branch_name'),
+              isRequired: true,
               controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: context.tr('locations.branch_name_hint'),
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? context.tr('locations.branch_name_required')
-                  : null,
+              hintText: context.tr('locations.branch_name_hint'),
+              validator: LocationValidators.branchName.validate,
             ),
             const SizedBox(height: 16),
-            _Label('${context.tr('common.address')} (${context.tr('common.optional')})'),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('common.address'),
+              isRequired: false,
               controller: _addressCtrl,
               maxLines: 2,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                hintText: context.tr('locations.address_hint'),
-              ),
+              hintText: context.tr('locations.address_hint'),
+              validator: LocationValidators.address.validate,
             ),
             const SizedBox(height: 16),
-            _Label('${context.tr('common.phone')} (${context.tr('common.optional')})'),
-            TextFormField(
+            FormFieldLabel(label: context.tr('common.phone')),
+            PhoneInputField(
               controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                hintText: context.tr('locations.phone_hint'),
-              ),
+              isRequired: false,
+              hintText: context.tr('locations.phone_hint'),
             ),
           ],
         ),
@@ -155,10 +154,7 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.slate,
-                side: const BorderSide(
-                  color: AppColors.hairline,
-                  width: 1.5,
-                ),
+                side: const BorderSide(color: AppColors.hairline, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -194,13 +190,10 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
                       _isEditing
                           ? context.tr('common.save')
                           : context.tr('locations.add_location'),
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),
@@ -231,31 +224,12 @@ class _AddEditLocationViewState extends State<AddEditLocationView> {
           _isEditing
               ? context.tr('locations.edit_location')
               : context.tr('locations.add_location'),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(child: content),
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-      ),
     );
   }
 }

@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
 import '../../data/inventory_repository.dart';
+import '../validators/inventory_validators.dart';
 
 class AddCategoryView extends StatefulWidget {
   const AddCategoryView({
     super.key,
+    this.category,
     this.isModal = true,
   });
 
+  final CategoryProps? category;
   final bool isModal;
 
   static const List<Color> swatchColors = [
@@ -30,9 +35,17 @@ class AddCategoryView extends StatefulWidget {
 class _AddCategoryViewState extends State<AddCategoryView> {
   final _inventoryRepo = InventoryRepository();
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
+  late final TextEditingController _nameCtrl;
   int _selectedSwatch = 0;
   bool _isLoading = false;
+
+  bool get _isEditing => widget.category != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.category?.name ?? '');
+  }
 
   @override
   void dispose() {
@@ -45,12 +58,26 @@ class _AddCategoryViewState extends State<AddCategoryView> {
     final catName = _nameCtrl.text.trim();
 
     setState(() => _isLoading = true);
-    final res = await _inventoryRepo.createCategory(CreateCategoryDto(name: catName));
+
+    final res = _isEditing
+        ? await _inventoryRepo.updateCategory(
+            widget.category!.id,
+            CreateCategoryDto(name: catName),
+          )
+        : await _inventoryRepo.createCategory(
+            CreateCategoryDto(name: catName),
+          );
+
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (res.isSuccess) {
-      ApiHelper.showSuccessSnackBar(context, context.tr('common.created_success'));
+      ApiHelper.showSuccessSnackBar(
+        context,
+        _isEditing
+            ? context.tr('common.updated_success')
+            : context.tr('common.created_success'),
+      );
       Navigator.of(context).pop(true);
     } else {
       ApiHelper.showErrorSnackBar(
@@ -70,24 +97,17 @@ class _AddCategoryViewState extends State<AddCategoryView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _Label(context.tr('inventory.category_name')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('inventory.category_name'),
+              isRequired: true,
               controller: _nameCtrl,
               autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: context.tr('inventory.category_name_hint'),
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return context.tr('inventory.category_name_required');
-                }
-                return null;
-              },
+              hintText: context.tr('inventory.category_name_hint'),
+              validator: InventoryValidators.categoryName.validate,
             ),
             const SizedBox(height: 20),
 
-            _Label(context.tr('inventory.category')),
+            FormFieldLabel(label: context.tr('inventory.category')),
             _SwatchRow(
               selected: _selectedSwatch,
               onSelect: (i) => setState(() => _selectedSwatch = i),
@@ -221,27 +241,6 @@ class _SwatchRow extends StatelessWidget {
           ),
         );
       }),
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-      ),
     );
   }
 }

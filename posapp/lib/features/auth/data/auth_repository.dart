@@ -1,6 +1,7 @@
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_constants.dart';
 import '../../../core/api/token_storage.dart';
+import '../../../core/permissions/permissions_service.dart';
 
 /// DTO for User Login
 class LoginDto {
@@ -210,5 +211,6 @@ class AuthRepository {
   /// Logout user and clear tokens
   Future<void> logout() async {
     await TokenStorage.clear();
+    PermissionsService().clear();
   }
 }

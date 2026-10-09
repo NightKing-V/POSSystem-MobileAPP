@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
@@ -101,7 +102,7 @@ class _ProductsListViewState extends State<ProductsListView> {
       leadingIcon: const Icon(Icons.add_shopping_cart,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 680,
-      builder: (_) => const AddProductView(isModal: true),
+      builder: (_) => AddProductView(product: product, isModal: true),
     );
     if (res == true) {
       _loadProducts();
@@ -128,15 +129,21 @@ class _ProductsListViewState extends State<ProductsListView> {
       ),
     );
     if (confirm == true) {
-      setState(() {
-        _products.removeWhere((item) => item.id == p.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${p.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final res = await _inventoryRepo.deleteProduct(p.id);
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        setState(() {
+          _products.removeWhere((item) => item.id == p.id);
+        });
+        ApiHelper.showSuccessSnackBar(
+          context,
+          '${p.name} ${context.tr('common.deleted_success').toLowerCase()}.',
+        );
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          res.errorMessage ?? context.tr('common.error'),
         );
       }
     }

@@ -54,10 +54,14 @@ class ApiConstants {
   // Orgs / Business endpoints
   static const String orgs = '/orgs';
   static const String orgCategories = '/orgs/categories';
+  static String org(String id) => '/orgs/$id';
+  static String orgMembers(String orgId) => '/orgs/$orgId/members';
 
   // Products & Categories endpoints
   static const String products = '/products';
+  static String product(String id) => '/products/$id';
   static const String categories = '/categories';
+  static String category(String id) => '/categories/$id';
   static const String brands = '/brands';
 
   // Sales & Bills endpoints
@@ -65,33 +69,56 @@ class ApiConstants {
 
   // Customers & Loyalty
   static const String customers = '/customers';
+  static String customer(String id) => '/customers/$id';
   static const String loyalty = '/loyalty';
   static const String discounts = '/discounts';
 
   // Suppliers & POs
   static const String suppliers = '/suppliers';
+  static String supplier(String id) => '/suppliers/$id';
   static const String purchaseOrders = '/purchase-orders';
+  static String purchaseOrder(String id) => '/purchase-orders/$id';
 
   // Inventory & Locations
   static const String inventory = '/inventory';
+  static String inventoryLocation(String id) => '/inventory/$id';
 
-  // Roles & Permissions (Org Roles & System Permissions)
+  // Organization Roles & Memberships endpoints
   static const String roles = '/roles';
-  static const String orgRoles = '/roles/org';
-  static const String permissions = '/roles/permissions';
-  static const String permissionsAll = '/roles/permissions/all';
-  static const String systemRoles = '/roles/system';
   static const String users = '/users';
+  static String user(String id) => '/users/$id';
 
-  static String orgRole(String id) => '/roles/org/$id';
-  static String orgRolePermissions(String roleId) =>
-      '/roles/org/$roleId/permissions';
+  static String myPermissions(String orgId) => '/roles/my-permissions/$orgId';
+  static String role(String id) => '/roles/$id';
+  static String rolePermissions(String roleId) => '/roles/$roleId/permissions';
+  static String rolePermission(String roleId, String permissionId) =>
+      '/roles/$roleId/permissions/$permissionId';
+  static String userRoles(String orgId, String userId) =>
+      '/roles/user-roles/$orgId/$userId';
+  static String userPermissions(String orgId, String userId) =>
+      '/roles/user-permissions/$orgId/$userId';
+  static String assignRole(String orgId, String userId) =>
+      '/roles/assign/$orgId/$userId';
+  static String unassignMember(String orgId, String userId) =>
+      '/roles/unassign/$orgId/$userId';
+  static String unassignRole(String orgId, String userId, String roleId) =>
+      '/roles/unassign/$orgId/$userId/$roleId';
+
+  // Admin — System Roles & Global Permissions
+  static const String permissions = '/admin/permissions';
+  static const String permissionsAll = '/admin/permissions';
+  static const String systemRoles = '/admin/system-roles';
+
+  // Backwards compatibility aliases
+  static const String orgRoles = '/roles';
+  static String orgRole(String id) => '/roles/$id';
+  static String orgRolePermissions(String roleId) => '/roles/$roleId/permissions';
   static String orgRolePermission(String roleId, String permissionId) =>
-      '/roles/org/$roleId/permissions/$permissionId';
+      '/roles/$roleId/permissions/$permissionId';
   static String orgUserRoles(String orgId, String userId) =>
-      '/roles/org/user-roles/$orgId/$userId';
+      '/roles/user-roles/$orgId/$userId';
   static String orgAssignRole(String orgId, String userId) =>
-      '/roles/org/assign/$orgId/$userId';
+      '/roles/assign/$orgId/$userId';
   static String orgUnassignRole(String orgId, String userId, String roleId) =>
-      '/roles/org/unassign/$orgId/$userId/$roleId';
+      '/roles/unassign/$orgId/$userId/$roleId';
 }

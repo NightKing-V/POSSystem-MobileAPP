@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/api/api_helper.dart';
+import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
@@ -133,15 +136,31 @@ class _EmployeesListViewState extends State<EmployeesListView> {
       ),
     );
     if (confirm == true) {
-      setState(() {
-        _employees.removeWhere((e) => e.id == employee.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${employee.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final effectiveOrgId = widget.orgId ?? TokenStorage.currentOrgId;
+      final ApiResponse<Map<String, dynamic>> res;
+      if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+        res = await _staffRepo.unassignMember(
+          orgId: effectiveOrgId,
+          userId: employee.id,
+        );
+      } else {
+        res = await _staffRepo.deleteUser(employee.id);
+      }
+
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        setState(() {
+          _employees.removeWhere((e) => e.id == employee.id);
+        });
+        ApiHelper.showSuccessSnackBar(
+          context,
+          '${employee.name} ${context.tr('common.deleted_success').toLowerCase()}.',
+        );
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          res.errorMessage ?? context.tr('common.error'),
         );
       }
     }

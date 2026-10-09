@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
+import '../../../../core/widgets/phone_input_field.dart';
 import '../../data/orgs_repository.dart';
+import '../validators/org_validators.dart';
 
 class CreateBusinessForm extends StatefulWidget {
   const CreateBusinessForm({
@@ -142,19 +146,19 @@ class _CreateBusinessFormState extends State<CreateBusinessForm> {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15),
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel(context.tr('orgs.store_name')),
-                TextFormField(
+                AppTextFormField(
+                  label: context.tr('orgs.store_name'),
+                  isRequired: true,
                   controller: _nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    hintText: context.tr('orgs.store_name_hint'),
-                    prefixIcon: const Icon(Icons.storefront_outlined, color: AppColors.slate, size: 20),
-                  ),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? context.tr('orgs.store_name_required') : null,
+                  hintText: context.tr('orgs.store_name_hint'),
+                  prefixIcon: const Icon(Icons.storefront_outlined, color: AppColors.slate, size: 20),
+                  validator: OrgValidators.businessName.validate,
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel(context.tr('orgs.business_category')),
+                FormFieldLabel(
+                  label: context.tr('orgs.business_category'),
+                  isRequired: true,
+                ),
                 if (_isLoadingCategories)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
@@ -239,23 +243,22 @@ class _CreateBusinessFormState extends State<CreateBusinessForm> {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15),
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel(context.tr('orgs.physical_address')),
-                TextFormField(
+                AppTextFormField(
+                  label: context.tr('orgs.physical_address'),
+                  isRequired: false,
                   controller: _addressCtrl,
-                  decoration: InputDecoration(
-                    hintText: context.tr('orgs.physical_address_hint'),
-                    prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.slate, size: 20),
-                  ),
+                  hintText: context.tr('orgs.physical_address_hint'),
+                  prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.slate, size: 20),
+                  validator: OrgValidators.address.validate,
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel(context.tr('orgs.contact_phone')),
-                TextFormField(
+                FormFieldLabel(
+                  label: context.tr('orgs.contact_phone'),
+                ),
+                PhoneInputField(
                   controller: _phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    hintText: context.tr('orgs.contact_phone_hint'),
-                    prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.slate, size: 20),
-                  ),
+                  isRequired: false,
+                  hintText: context.tr('orgs.contact_phone_hint'),
                 ),
               ],
             ),
@@ -310,20 +313,6 @@ class _CreateBusinessFormState extends State<CreateBusinessForm> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFieldLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
       ),
     );
   }

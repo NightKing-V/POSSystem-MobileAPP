@@ -64,28 +64,53 @@ class StaffUserProps {
 class CreateStaffUserDto {
   final String name;
   final String email;
-  final String password;
+  final String? password;
   final String? phone;
+  final String? address;
   final String? roleId;
   final String? locationId;
 
   const CreateStaffUserDto({
     required this.name,
     required this.email,
-    required this.password,
+    this.password,
     this.phone,
+    this.address,
     this.roleId,
     this.locationId,
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name.trim(),
+        'fullname': name.trim(),
         'email': email.trim(),
-        'password': password,
         if (phone?.isNotEmpty == true) 'phone': phone!.trim(),
-        if (roleId != null && roleId!.isNotEmpty) 'role_id': roleId,
-        if (locationId != null && locationId!.isNotEmpty)
-          'location_id': locationId,
+        if (address?.isNotEmpty == true) 'address': address!.trim(),
+      };
+}
+
+class InviteMemberDto {
+  final String email;
+  final String? fullname;
+  final String? roleId;
+  final List<String>? roleIds;
+  final List<String>? locationIds;
+
+  const InviteMemberDto({
+    required this.email,
+    this.fullname,
+    this.roleId,
+    this.roleIds,
+    this.locationIds,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'email': email.trim(),
+        if (fullname != null && fullname!.trim().isNotEmpty)
+          'fullname': fullname!.trim(),
+        if (roleId != null && roleId!.isNotEmpty) 'roleId': roleId,
+        if (roleIds != null && roleIds!.isNotEmpty) 'roleIds': roleIds,
+        if (locationIds != null && locationIds!.isNotEmpty)
+          'locationIds': locationIds,
       };
 }
 
@@ -474,12 +499,57 @@ class StaffRepository {
     );
   }
 
-  /// Create a new staff user
+  /// Create a new staff user or invite org member
   Future<ApiResponse<Map<String, dynamic>>> createStaffUser(
-    CreateStaffUserDto dto,
-  ) async {
+    CreateStaffUserDto dto, {
+    String? orgId,
+  }) async {
+    final effectiveOrgId = orgId ?? TokenStorage.currentOrgId;
+    if (effectiveOrgId != null && effectiveOrgId.isNotEmpty) {
+      final inviteDto = InviteMemberDto(
+        email: dto.email,
+        fullname: dto.name,
+        roleIds: dto.roleId != null && dto.roleId!.isNotEmpty ? [dto.roleId!] : null,
+        locationIds: dto.locationId != null && dto.locationId!.isNotEmpty
+            ? [dto.locationId!]
+            : null,
+      );
+      final inviteRes = await inviteMember(effectiveOrgId, inviteDto);
+      if (inviteRes.isSuccess) {
+        return inviteRes;
+      }
+    }
     return _apiClient.post<Map<String, dynamic>>(
       ApiConstants.users,
+      body: dto.toJson(),
+    );
+  }
+
+  /// Update user details (PATCH /users/:id)
+  Future<ApiResponse<Map<String, dynamic>>> updateUser(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    return _apiClient.patch<Map<String, dynamic>>(
+      ApiConstants.user(id),
+      body: data,
+    );
+  }
+
+  /// Delete user (DELETE /users/:id)
+  Future<ApiResponse<Map<String, dynamic>>> deleteUser(String id) async {
+    return _apiClient.delete<Map<String, dynamic>>(
+      ApiConstants.user(id),
+    );
+  }
+
+  /// Invite a member to an organization (POST /orgs/:id/members)
+  Future<ApiResponse<Map<String, dynamic>>> inviteMember(
+    String orgId,
+    InviteMemberDto dto,
+  ) async {
+    return _apiClient.post<Map<String, dynamic>>(
+      ApiConstants.orgMembers(orgId),
       body: dto.toJson(),
     );
   }
@@ -562,7 +632,26 @@ class StaffRepository {
     );
   }
 
-  /// 7. POST /roles/org/assign/:orgId/:userId: Assigns an OrgRole to a user within that organization
+  /// 6b. GET /roles/user-permissions/:orgId/:userId: Gets effective permissions for a user in an org
+  Future<ApiResponse<List<PermissionItem>>> fetchUserPermissions({
+    required String orgId,
+    required String userId,
+  }) async {
+    return _apiClient.get<List<PermissionItem>>(
+      ApiConstants.userPermissions(orgId, userId),
+      parser: (json) {
+        if (json is List) {
+          return json
+              .map((e) => PermissionItem.fromJson(
+                  Map<String, dynamic>.from(e as Map)))
+              .toList();
+        }
+        return [];
+      },
+    );
+  }
+
+  /// 7. POST /roles/assign/:orgId/:userId: Assigns an OrgRole to a user within that organization
   Future<ApiResponse<Map<String, dynamic>>> assignOrgRole({
     required String orgId,
     required String userId,
@@ -570,19 +659,29 @@ class StaffRepository {
   }) async {
     final dto = AssignRoleDto(roleId: roleId);
     return _apiClient.post<Map<String, dynamic>>(
-      ApiConstants.orgAssignRole(orgId, userId),
+      ApiConstants.assignRole(orgId, userId),
       body: dto.toJson(),
     );
   }
 
-  /// 8. DELETE /roles/org/unassign/:orgId/:userId/:roleId: Removes an OrgRole assignment
+  /// 8. DELETE /roles/unassign/:orgId/:userId/:roleId: Removes an OrgRole assignment
   Future<ApiResponse<Map<String, dynamic>>> unassignOrgRole({
     required String orgId,
     required String userId,
     required String roleId,
   }) async {
     return _apiClient.delete<Map<String, dynamic>>(
-      ApiConstants.orgUnassignRole(orgId, userId, roleId),
+      ApiConstants.unassignRole(orgId, userId, roleId),
+    );
+  }
+
+  /// 9. DELETE /roles/unassign/:orgId/:userId: Removes member from organization
+  Future<ApiResponse<Map<String, dynamic>>> unassignMember({
+    required String orgId,
+    required String userId,
+  }) async {
+    return _apiClient.delete<Map<String, dynamic>>(
+      ApiConstants.unassignMember(orgId, userId),
     );
   }
 

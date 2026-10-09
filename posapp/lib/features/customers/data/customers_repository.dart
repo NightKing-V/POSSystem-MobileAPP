@@ -116,5 +116,23 @@ class CustomersRepository {
       body: dto.toJson(),
     );
   }
+
+  /// Update an existing customer (PATCH /customers/:id)
+  Future<ApiResponse<Map<String, dynamic>>> updateCustomer(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    return _apiClient.patch<Map<String, dynamic>>(
+      ApiConstants.customer(id),
+      body: data,
+    );
+  }
+
+  /// Delete a customer (DELETE /customers/:id)
+  Future<ApiResponse<Map<String, dynamic>>> deleteCustomer(String id) async {
+    return _apiClient.delete<Map<String, dynamic>>(
+      ApiConstants.customer(id),
+    );
+  }
 }
 

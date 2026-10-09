@@ -5,7 +5,9 @@ import '../../../../core/api/api_helper.dart';
 import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
 import '../../data/staff_repository.dart';
+import '../validators/staff_validators.dart';
 
 class AddEditPermissionSetView extends StatefulWidget {
   const AddEditPermissionSetView({
@@ -118,16 +120,20 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
         if (_searchQuery.isNotEmpty) {
           final q = _searchQuery.toLowerCase();
           _availablePermissions = defaults
-              .where((p) =>
-                  p.label.toLowerCase().contains(q) ||
-                  p.resource.toLowerCase().contains(q) ||
-                  p.action.toLowerCase().contains(q))
+              .where(
+                (p) =>
+                    p.label.toLowerCase().contains(q) ||
+                    p.resource.toLowerCase().contains(q) ||
+                    p.action.toLowerCase().contains(q),
+              )
               .toList();
         } else if (_selectedResourceFilter != null) {
           _availablePermissions = defaults
-              .where((p) =>
-                  p.resource.toLowerCase() ==
-                  _selectedResourceFilter!.toLowerCase())
+              .where(
+                (p) =>
+                    p.resource.toLowerCase() ==
+                    _selectedResourceFilter!.toLowerCase(),
+              )
               .toList();
         } else {
           _availablePermissions = defaults;
@@ -202,39 +208,104 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
 
   List<PermissionItem> _generateDefaultPermissions() {
     const modules = [
-      {'resource': 'products', 'action': 'manage', 'desc': 'Manage Catalog & Products'},
-      {'resource': 'products', 'action': 'create', 'desc': 'Create New Products'},
-      {'resource': 'products', 'action': 'update', 'desc': 'Update Product Details & Prices'},
-      {'resource': 'products', 'action': 'delete', 'desc': 'Delete Products & Archive'},
-      {'resource': 'bills', 'action': 'manage', 'desc': 'POS Checkout, Bills & Receipts'},
-      {'resource': 'bills', 'action': 'create', 'desc': 'Process POS Sales & Cashout'},
-      {'resource': 'bills', 'action': 'void', 'desc': 'Void Bills & Order Cancellations'},
-      {'resource': 'discounts', 'action': 'apply', 'desc': 'Apply Discounts & Coupons'},
-      {'resource': 'discounts', 'action': 'manage', 'desc': 'Create & Modify Store Promotions'},
-      {'resource': 'inventory', 'action': 'manage', 'desc': 'Inventory Stock & Locations'},
-      {'resource': 'inventory', 'action': 'adjust', 'desc': 'Stock In/Out & Adjustments'},
-      {'resource': 'suppliers', 'action': 'manage', 'desc': 'Suppliers & Purchase Orders'},
-      {'resource': 'suppliers', 'action': 'create', 'desc': 'Issue Purchase Orders'},
-      {'resource': 'customers', 'action': 'manage', 'desc': 'Customers & Loyalty Points'},
-      {'resource': 'roles', 'action': 'manage', 'desc': 'Staff Accounts & Roles'},
-      {'resource': 'settings', 'action': 'manage', 'desc': 'General & Business Settings'},
+      {
+        'resource': 'products',
+        'action': 'manage',
+        'desc': 'Manage Catalog & Products',
+      },
+      {
+        'resource': 'products',
+        'action': 'create',
+        'desc': 'Create New Products',
+      },
+      {
+        'resource': 'products',
+        'action': 'update',
+        'desc': 'Update Product Details & Prices',
+      },
+      {
+        'resource': 'products',
+        'action': 'delete',
+        'desc': 'Delete Products & Archive',
+      },
+      {
+        'resource': 'bills',
+        'action': 'manage',
+        'desc': 'POS Checkout, Bills & Receipts',
+      },
+      {
+        'resource': 'bills',
+        'action': 'create',
+        'desc': 'Process POS Sales & Cashout',
+      },
+      {
+        'resource': 'bills',
+        'action': 'void',
+        'desc': 'Void Bills & Order Cancellations',
+      },
+      {
+        'resource': 'discounts',
+        'action': 'apply',
+        'desc': 'Apply Discounts & Coupons',
+      },
+      {
+        'resource': 'discounts',
+        'action': 'manage',
+        'desc': 'Create & Modify Store Promotions',
+      },
+      {
+        'resource': 'inventory',
+        'action': 'manage',
+        'desc': 'Inventory Stock & Locations',
+      },
+      {
+        'resource': 'inventory',
+        'action': 'adjust',
+        'desc': 'Stock In/Out & Adjustments',
+      },
+      {
+        'resource': 'suppliers',
+        'action': 'manage',
+        'desc': 'Suppliers & Purchase Orders',
+      },
+      {
+        'resource': 'suppliers',
+        'action': 'create',
+        'desc': 'Issue Purchase Orders',
+      },
+      {
+        'resource': 'customers',
+        'action': 'manage',
+        'desc': 'Customers & Loyalty Points',
+      },
+      {
+        'resource': 'roles',
+        'action': 'manage',
+        'desc': 'Staff Accounts & Roles',
+      },
+      {
+        'resource': 'settings',
+        'action': 'manage',
+        'desc': 'General & Business Settings',
+      },
     ];
 
     return modules
-        .map((m) => PermissionItem(
-              id: '${m['resource']}_${m['action']}',
-              resource: m['resource']!,
-              action: m['action']!,
-              description: m['desc']!,
-            ))
+        .map(
+          (m) => PermissionItem(
+            id: '${m['resource']}_${m['action']}',
+            resource: m['resource']!,
+            action: m['action']!,
+            description: m['desc']!,
+          ),
+        )
         .toList();
   }
 
   void _toggleAllVisible(bool value) {
     setState(() {
       if (value) {
-        _selectedPermissionIds
-            .addAll(_availablePermissions.map((p) => p.id));
+        _selectedPermissionIds.addAll(_availablePermissions.map((p) => p.id));
       } else {
         for (final p in _availablePermissions) {
           _selectedPermissionIds.remove(p.id);
@@ -264,8 +335,9 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
     if (_isEditing) {
       final dto = UpdateRoleDto(
         name: _nameCtrl.text.trim(),
-        description:
-            _descCtrl.text.trim().isNotEmpty ? _descCtrl.text.trim() : null,
+        description: _descCtrl.text.trim().isNotEmpty
+            ? _descCtrl.text.trim()
+            : null,
         isLocationScoped: _isLocationScoped,
         permissionIds: selectedIds,
       );
@@ -274,8 +346,9 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
       final dto = CreateRoleDto(
         orgId: orgId!,
         name: _nameCtrl.text.trim(),
-        description:
-            _descCtrl.text.trim().isNotEmpty ? _descCtrl.text.trim() : null,
+        description: _descCtrl.text.trim().isNotEmpty
+            ? _descCtrl.text.trim()
+            : null,
         isLocationScoped: _isLocationScoped,
         permissionIds: selectedIds,
       );
@@ -325,30 +398,26 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
             Text(
               context.tr('staff.role_details'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 14),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('staff.role_name'),
+              isRequired: true,
               controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: context.tr('staff.role_name'),
-                hintText: context.tr('staff.role_name_hint'),
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? context.tr('staff.role_name_required')
-                  : null,
+              hintText: context.tr('staff.role_name_hint'),
+              validator: StaffValidators.roleName.validate,
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('common.description'),
+              isRequired: false,
               controller: _descCtrl,
-              decoration: InputDecoration(
-                labelText: '${context.tr('common.description')} (${context.tr('common.optional')})',
-                hintText: context.tr('staff.description_hint'),
-              ),
+              hintText: context.tr('staff.description_hint'),
+              validator: StaffValidators.roleDescription.validate,
             ),
             const SizedBox(height: 16),
 
@@ -360,7 +429,10 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               activeThumbColor: AppColors.inkTeal,
               title: Text(
                 context.tr('staff.location_scoped'),
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
               subtitle: Text(
                 context.tr('staff.location_scoped_desc'),
@@ -393,14 +465,17 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                     Text(
                       context.tr('staff.access_permissions'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.ink,
-                          ),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.ink,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      context.tr('staff.permissions_assigned', args: {'count': _selectedPermissionIds.length}),
+                      context.tr(
+                        'staff.permissions_assigned',
+                        args: {'count': _selectedPermissionIds.length},
+                      ),
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.slate,
@@ -410,14 +485,19 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.inkTeal.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    context.tr('staff.selected_count', args: {'count': _selectedPermissionIds.length}),
+                    context.tr(
+                      'staff.selected_count',
+                      args: {'count': _selectedPermissionIds.length},
+                    ),
                     style: const TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.bold,
@@ -436,17 +516,27 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               style: const TextStyle(fontSize: 13, color: AppColors.ink),
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 hintText: context.tr('staff.search_permissions'),
-                hintStyle:
-                    const TextStyle(fontSize: 13, color: AppColors.slate),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    color: AppColors.slate, size: 18),
+                hintStyle: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.slate,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.slate,
+                  size: 18,
+                ),
                 suffixIcon: _permSearchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear_rounded,
-                            size: 16, color: AppColors.slate),
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          size: 16,
+                          color: AppColors.slate,
+                        ),
                         onPressed: () {
                           _permSearchCtrl.clear();
                           _onSearchChanged('');
@@ -462,8 +552,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: resourceCategories.map((cat) {
-                  final isSelected =
-                      _selectedResourceFilter == cat['value'];
+                  final isSelected = _selectedResourceFilter == cat['value'];
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: FilterChip(
@@ -475,14 +564,11 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color: isSelected
-                              ? AppColors.inkTeal
-                              : AppColors.ink,
+                          color: isSelected ? AppColors.inkTeal : AppColors.ink,
                         ),
                       ),
                       backgroundColor: Colors.white,
-                      selectedColor:
-                          AppColors.inkTeal.withValues(alpha: 0.12),
+                      selectedColor: AppColors.inkTeal.withValues(alpha: 0.12),
                       checkmarkColor: AppColors.inkTeal,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -511,10 +597,16 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               activeThumbColor: AppColors.inkTeal,
               title: Text(
                 context.tr('staff.select_all_visible'),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                ),
               ),
               subtitle: Text(
-                context.tr('staff.toggle_visible_desc', args: {'count': _availablePermissions.length}),
+                context.tr(
+                  'staff.toggle_visible_desc',
+                  args: {'count': _availablePermissions.length},
+                ),
                 style: const TextStyle(fontSize: 11.5, color: AppColors.slate),
               ),
               secondary: Container(
@@ -549,9 +641,11 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.shield_outlined,
-                          size: 36,
-                          color: AppColors.slate.withValues(alpha: 0.5)),
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 36,
+                        color: AppColors.slate.withValues(alpha: 0.5),
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         context.tr('staff.no_permissions_found'),
@@ -570,16 +664,17 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               for (int i = 0; i < _availablePermissions.length; i++) ...[
                 _PermissionItemTile(
                   permission: _availablePermissions[i],
-                  isSelected: _selectedPermissionIds
-                      .contains(_availablePermissions[i].id),
+                  isSelected: _selectedPermissionIds.contains(
+                    _availablePermissions[i].id,
+                  ),
                   onChanged: (selected) {
                     setState(() {
                       if (selected) {
-                        _selectedPermissionIds
-                            .add(_availablePermissions[i].id);
+                        _selectedPermissionIds.add(_availablePermissions[i].id);
                       } else {
-                        _selectedPermissionIds
-                            .remove(_availablePermissions[i].id);
+                        _selectedPermissionIds.remove(
+                          _availablePermissions[i].id,
+                        );
                       }
                     });
                   },
@@ -642,10 +737,7 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.slate,
-                side: const BorderSide(
-                  color: AppColors.hairline,
-                  width: 1.5,
-                ),
+                side: const BorderSide(color: AppColors.hairline, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -678,11 +770,13 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
                       ),
                     )
                   : Text(
-                      _isEditing ? context.tr('common.save') : context.tr('staff.add_role'),
+                      _isEditing
+                          ? context.tr('common.save')
+                          : context.tr('staff.add_role'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),
@@ -710,9 +804,12 @@ class _AddEditPermissionSetViewState extends State<AddEditPermissionSetView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? context.tr('staff.edit_role') : context.tr('staff.add_role'),
-          style:
-              Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+          _isEditing
+              ? context.tr('staff.edit_role')
+              : context.tr('staff.add_role'),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(child: content),
@@ -744,8 +841,8 @@ class _PermissionItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = _resourceIcons[permission.resource.toLowerCase()] ??
-        Icons.lock_outline;
+    final icon =
+        _resourceIcons[permission.resource.toLowerCase()] ?? Icons.lock_outline;
 
     return SwitchListTile(
       value: isSelected,
@@ -798,4 +895,3 @@ class _PermissionItemTile extends StatelessWidget {
     );
   }
 }
-

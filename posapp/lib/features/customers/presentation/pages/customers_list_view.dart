@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
@@ -98,7 +99,11 @@ class _CustomersListViewState extends State<CustomersListView> {
       leadingIcon: const Icon(Icons.person_add_outlined,
           color: AppColors.inkTeal, size: 20),
       maxWidth: 620,
-      builder: (_) => AddCustomerView(orgId: widget.orgId, isModal: true),
+      builder: (_) => AddCustomerView(
+        customer: customer,
+        orgId: widget.orgId,
+        isModal: true,
+      ),
     );
     if (res == true) {
       _loadCustomers();
@@ -124,16 +129,20 @@ class _CustomersListViewState extends State<CustomersListView> {
         ],
       ),
     );
+
     if (confirm == true) {
-      setState(() {
-        _customers.removeWhere((c) => c.id == customer.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('common.deleted_success')),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final res = await _customersRepo.deleteCustomer(customer.id);
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        setState(() {
+          _customers.removeWhere((c) => c.id == customer.id);
+        });
+        ApiHelper.showSuccessSnackBar(context, context.tr('common.deleted_success'));
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          res.errorMessage ?? context.tr('common.error'),
         );
       }
     }

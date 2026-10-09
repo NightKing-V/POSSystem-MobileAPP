@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
 import '../../data/inventory_repository.dart';
+import '../../domain/models/product.dart';
+import '../validators/inventory_validators.dart';
 import './add_category_view.dart';
 
-/// Lightweight standalone form for creating a new product.
+/// Lightweight standalone form for creating or editing a product.
 class AddProductView extends StatefulWidget {
-  const AddProductView({
-    super.key,
-    this.isModal = true,
-  });
+  const AddProductView({super.key, this.product, this.isModal = true});
 
+  final Product? product;
   final bool isModal;
 
   @override
@@ -22,10 +25,10 @@ class AddProductView extends StatefulWidget {
 class _AddProductViewState extends State<AddProductView> {
   final _inventoryRepo = InventoryRepository();
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _skuCtrl = TextEditingController();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _skuCtrl;
   final _costCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
+  late final TextEditingController _priceCtrl;
   final _stockCtrl = TextEditingController();
 
   List<CategoryProps> _categories = [];
@@ -33,9 +36,18 @@ class _AddProductViewState extends State<AddProductView> {
   bool _isLoadingCats = false;
   bool _isSaving = false;
 
+  bool get _isEditing => widget.product != null;
+
   @override
   void initState() {
     super.initState();
+    _nameCtrl = TextEditingController(text: widget.product?.name ?? '');
+    _skuCtrl = TextEditingController(text: widget.product?.sku ?? '');
+    _priceCtrl = TextEditingController(
+      text: widget.product != null && widget.product!.price > 0
+          ? widget.product!.price.toStringAsFixed(2)
+          : '',
+    );
     _loadCategories();
   }
 
@@ -57,6 +69,16 @@ class _AddProductViewState extends State<AddProductView> {
       _isLoadingCats = false;
       if (res.isSuccess && res.data != null) {
         _categories = res.data!;
+        // Match existing category by name if editing
+        if (_isEditing && widget.product!.category.isNotEmpty) {
+          final matched = _categories.where(
+            (c) =>
+                c.name.toLowerCase() == widget.product!.category.toLowerCase(),
+          );
+          if (matched.isNotEmpty) {
+            _selectedCategoryId = matched.first.id;
+          }
+        }
       }
     });
   }
@@ -79,7 +101,11 @@ class _AddProductViewState extends State<AddProductView> {
       context: context,
       title: context.tr('inventory.add_category'),
       subtitle: context.tr('inventory.no_categories_hint'),
-      leadingIcon: const Icon(Icons.category_outlined, color: AppColors.inkTeal, size: 20),
+      leadingIcon: const Icon(
+        Icons.category_outlined,
+        color: AppColors.inkTeal,
+        size: 20,
+      ),
       maxWidth: 480,
       builder: (_) => const AddCategoryView(isModal: true),
     );
@@ -95,9 +121,21 @@ class _AddProductViewState extends State<AddProductView> {
   }
 
   Future<void> _submit() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isSaving = true);
-      final price = double.tryParse(_priceCtrl.text) ?? 0.0;
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    final price = double.tryParse(_priceCtrl.text) ?? 0.0;
+
+    final ApiResponse<Map<String, dynamic>> res;
+
+    if (_isEditing) {
+      final updateData = <String, dynamic>{
+        'name': _nameCtrl.text.trim(),
+        if (_skuCtrl.text.isNotEmpty) 'SKU': _skuCtrl.text.trim(),
+        if (price > 0) 'initialPrice': price,
+        if (_selectedCategoryId != null) 'subcategoryid': _selectedCategoryId,
+      };
+      res = await _inventoryRepo.updateProduct(widget.product!.id, updateData);
+    } else {
       final dto = CreateProductDto(
         name: _nameCtrl.text.trim(),
         subcategoryId:
@@ -105,20 +143,25 @@ class _AddProductViewState extends State<AddProductView> {
         sku: _skuCtrl.text.isNotEmpty ? _skuCtrl.text.trim() : null,
         initialPrice: price > 0 ? price : null,
       );
+      res = await _inventoryRepo.createProduct(dto);
+    }
 
-      final res = await _inventoryRepo.createProduct(dto);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
 
-      if (!mounted) return;
-      setState(() => _isSaving = false);
-
-      if (res.isSuccess) {
-        ApiHelper.showSuccessSnackBar(
-            context, context.tr('common.created_success'));
-        Navigator.of(context).pop(true);
-      } else {
-        ApiHelper.showErrorSnackBar(
-            context, res.errorMessage ?? context.tr('common.error'));
-      }
+    if (res.isSuccess) {
+      ApiHelper.showSuccessSnackBar(
+        context,
+        _isEditing
+            ? context.tr('common.updated_success')
+            : context.tr('common.created_success'),
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      ApiHelper.showErrorSnackBar(
+        context,
+        res.errorMessage ?? context.tr('common.error'),
+      );
     }
   }
 
@@ -135,30 +178,25 @@ class _AddProductViewState extends State<AddProductView> {
             _buildSectionHeader(context.tr('settings.general')),
             const SizedBox(height: 14),
 
-            _buildLabel(context.tr('inventory.product_name')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('inventory.product_name'),
+              isRequired: true,
               controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: context.tr('inventory.product_name_hint'),
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? context.tr('inventory.product_name_required')
-                  : null,
+              hintText: context.tr('inventory.product_name_hint'),
+              validator: InventoryValidators.productName.validate,
             ),
             const SizedBox(height: 16),
 
             // SKU + Barcode Row
-            _buildLabel(context.tr('inventory.barcode')),
+            FormFieldLabel(label: context.tr('inventory.barcode')),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextFormField(
+                  child: AppTextFormField(
                     controller: _skuCtrl,
-                    decoration: InputDecoration(
-                      hintText: context.tr('inventory.barcode_hint'),
-                    ),
+                    validator: InventoryValidators.sku.validate,
+                    hintText: context.tr('inventory.barcode_hint'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -167,11 +205,19 @@ class _AddProductViewState extends State<AddProductView> {
                   child: OutlinedButton.icon(
                     onPressed: _generateBarcode,
                     icon: const Icon(Icons.qr_code_scanner, size: 18),
-                    label: Text(context.tr('common.apply'), style: const TextStyle(fontSize: 12)),
+                    label: Text(
+                      context.tr('common.apply'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.inkTeal,
-                      side: const BorderSide(color: AppColors.hairline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: const BorderSide(
+                        color: AppColors.hairline,
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -183,10 +229,17 @@ class _AddProductViewState extends State<AddProductView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildLabel(context.tr('inventory.category')),
+                FormFieldLabel(
+                  label: context.tr('inventory.category'),
+                  isRequired: true,
+                ),
                 TextButton.icon(
                   onPressed: _openNewCategoryModal,
-                  icon: const Icon(Icons.add, size: 16, color: AppColors.inkTeal),
+                  icon: const Icon(
+                    Icons.add,
+                    size: 16,
+                    color: AppColors.inkTeal,
+                  ),
                   label: Text(
                     context.tr('inventory.add_category'),
                     style: const TextStyle(
@@ -196,7 +249,10 @@ class _AddProductViewState extends State<AddProductView> {
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     minimumSize: const Size(0, 0),
                   ),
                 ),
@@ -204,22 +260,24 @@ class _AddProductViewState extends State<AddProductView> {
             ),
             DropdownButtonFormField<String>(
               initialValue: _selectedCategoryId,
-              hint: Text(_isLoadingCats ? context.tr('common.loading') : context.tr('inventory.select_category')),
+              hint: Text(
+                _isLoadingCats
+                    ? context.tr('common.loading')
+                    : context.tr('inventory.select_category'),
+              ),
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               items: _categories
                   .map(
-                    (c) => DropdownMenuItem(
-                      value: c.id,
-                      child: Text(c.name),
-                    ),
+                    (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
                   )
                   .toList(),
               onChanged: (v) => setState(() => _selectedCategoryId = v),
-              validator: (v) => (v == null || v.isEmpty)
-                  ? context.tr('inventory.select_category')
-                  : null,
+              validator: InventoryValidators.category.validate,
             ),
             const SizedBox(height: 24),
 
@@ -231,69 +289,50 @@ class _AddProductViewState extends State<AddProductView> {
             const SizedBox(height: 14),
 
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel(context.tr('inventory.cost')),
-                      TextFormField(
-                        controller: _costCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          hintText: context.tr('inventory.cost_hint'),
-                          prefixText: 'Rs. ',
-                        ),
-                      ),
-                    ],
+                  child: AppTextFormField(
+                    label: context.tr('inventory.cost'),
+                    isRequired: false,
+                    controller: _costCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: context.tr('inventory.cost_hint'),
+                      prefixText: 'Rs. ',
+                    ),
+                    validator: InventoryValidators.costPrice.validate,
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLabel(context.tr('inventory.price')),
-                      TextFormField(
-                        controller: _priceCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          hintText: context.tr('inventory.price_hint'),
-                          prefixText: 'Rs. ',
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return context.tr('inventory.price_required');
-                          }
-                          if (double.tryParse(v) == null) {
-                            return context.tr('common.error');
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+                  child: AppTextFormField(
+                    label: context.tr('inventory.price'),
+                    isRequired: true,
+                    controller: _priceCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: context.tr('inventory.price_hint'),
+                      prefixText: 'Rs. ',
+                    ),
+                    validator: InventoryValidators.sellingPrice.validate,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            _buildLabel(context.tr('inventory.stock_qty')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('inventory.stock_qty'),
+              isRequired: true,
               controller: _stockCtrl,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(hintText: context.tr('inventory.stock_qty_hint')),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return context.tr('common.required');
-                }
-                if (int.tryParse(v) == null) {
-                  return context.tr('common.error');
-                }
-                return null;
-              },
+              hintText: context.tr('inventory.stock_qty_hint'),
+              validator: InventoryValidators.stockQuantity.validate,
             ),
           ],
         ),
@@ -319,7 +358,9 @@ class _AddProductViewState extends State<AddProductView> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.slate,
                 side: const BorderSide(color: AppColors.hairline, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 48),
               ),
               child: Text(context.tr('common.cancel')),
@@ -351,9 +392,9 @@ class _AddProductViewState extends State<AddProductView> {
                   : Text(
                       context.tr('inventory.add_product'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),
@@ -382,7 +423,9 @@ class _AddProductViewState extends State<AddProductView> {
         titleSpacing: 16,
         title: Text(
           context.tr('inventory.add_product'),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(child: content),
@@ -393,23 +436,9 @@ class _AddProductViewState extends State<AddProductView> {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: AppColors.ink,
-          ),
-    );
-  }
-
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+        color: AppColors.ink,
       ),
     );
   }

@@ -22,6 +22,9 @@ class ApiResponse<T> {
 
 /// Centralized Response Handler & API Client for all network requests.
 class ApiClient {
+  /// Global callback invoked whenever any API request returns a 401 Unauthorized
+  static void Function()? onGlobalUnauthorized;
+
   final String baseUrl;
   final String? Function()? getToken;
   final void Function()? onUnauthorized;
@@ -90,6 +93,7 @@ class ApiClient {
         // Centralized unauthorized handling (token expiry / logout callback)
         TokenStorage.clear();
         onUnauthorized?.call();
+        onGlobalUnauthorized?.call();
         return ApiResponse<T>(
           statusCode: statusCode,
           errorMessage:

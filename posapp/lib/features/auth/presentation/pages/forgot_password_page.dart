@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/password_strength_indicator.dart';
 import '../../data/auth_repository.dart';
+import '../validators/auth_validators.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_wordmark.dart';
 import '../widgets/auth_step_indicator.dart';
@@ -31,6 +33,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   bool _isLoading = false;
   String? _errorText;
   String _otpToken = '';
+
+  final _emailFormKey = GlobalKey<FormState>();
+  final _passwordFormKey = GlobalKey<FormState>();
 
   final _authRepo = AuthRepository();
   late final TextEditingController _emailCtrl;
@@ -93,13 +98,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   /// Step 1: Request OTP by Email
   Future<void> _handleRequestOtp() async {
+    if (!_emailFormKey.currentState!.validate()) return;
     final email = _emailCtrl.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      setState(() {
-        _errorText = context.tr('auth.invalid_email');
-      });
-      return;
-    }
 
     setState(() {
       _isLoading = true;
@@ -180,22 +180,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   /// Step 3: Set New Password
   Future<void> _handleResetPassword() async {
+    if (!_passwordFormKey.currentState!.validate()) return;
     final newPassword = _newPasswordCtrl.text;
-    final confirmPassword = _confirmPasswordCtrl.text;
-
-    if (newPassword.length < 8) {
-      setState(() {
-        _errorText = context.tr('auth.password_min_length');
-      });
-      return;
-    }
-
-    if (newPassword != confirmPassword) {
-      setState(() {
-        _errorText = context.tr('auth.passwords_dont_match');
-      });
-      return;
-    }
 
     setState(() {
       _isLoading = true;
@@ -363,88 +349,93 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   /// Step 1: Email Form
   Widget _buildEmailStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: _back,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                size: 20,
-                color: AppColors.slate,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                context.tr('auth.reset_password_title'),
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+    return Form(
+      key: _emailFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: _back,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  size: 20,
+                  color: AppColors.slate,
                 ),
               ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  context.tr('auth.reset_password_title'),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.tr('auth.reset_password_desc'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 28),
+          AuthTextField(
+            label: context.tr('auth.email'),
+            hintText: context.tr('auth.email_hint'),
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            validator: AuthValidators.email.validate,
+            isRequired: true,
+          ),
+          if (_errorText != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorText!,
+              style: const TextStyle(color: AppColors.error, fontSize: 13),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          context.tr('auth.reset_password_desc'),
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 28),
-        AuthTextField(
-          label: context.tr('auth.email'),
-          hintText: context.tr('auth.email_hint'),
-          controller: _emailCtrl,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        if (_errorText != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            _errorText!,
-            style: const TextStyle(color: AppColors.error, fontSize: 13),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleRequestOtp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      context.tr('auth.send_reset_code'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
           ),
         ],
-        const SizedBox(height: 28),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _handleRequestOtp,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.inkTeal,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    context.tr('auth.send_reset_code'),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -464,93 +455,112 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   /// Step 3: Set New Password
   Widget _buildNewPasswordStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: _back,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                size: 20,
-                color: AppColors.slate,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                context.tr('auth.set_new_password_title'),
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+    return Form(
+      key: _passwordFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: _back,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  size: 20,
+                  color: AppColors.slate,
                 ),
               ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  context.tr('auth.set_new_password_title'),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.tr('auth.set_new_password_desc'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 24),
+          AuthTextField(
+            label: context.tr('auth.new_password'),
+            obscureText: true,
+            controller: _newPasswordCtrl,
+            validator: AuthValidators.password.validate,
+            isRequired: true,
+            onChanged: (_) => setState(() {}),
+          ),
+          PasswordStrengthIndicator(
+            password: _newPasswordCtrl.text,
+          ),
+          const SizedBox(height: 16),
+          AuthTextField(
+            label: context.tr('auth.confirm_new_password'),
+            obscureText: true,
+            controller: _confirmPasswordCtrl,
+            validator: (v) {
+              if (v == null || v.isEmpty) {
+                return 'Please confirm your password';
+              }
+              if (v != _newPasswordCtrl.text) {
+                return context.tr('auth.passwords_dont_match');
+              }
+              return null;
+            },
+            isRequired: true,
+          ),
+          if (_errorText != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorText!,
+              style: const TextStyle(color: AppColors.error, fontSize: 13),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          context.tr('auth.set_new_password_desc'),
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 24),
-        AuthTextField(
-          label: context.tr('auth.new_password'),
-          obscureText: true,
-          controller: _newPasswordCtrl,
-        ),
-        const SizedBox(height: 16),
-        AuthTextField(
-          label: context.tr('auth.confirm_new_password'),
-          obscureText: true,
-          controller: _confirmPasswordCtrl,
-        ),
-        if (_errorText != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            _errorText!,
-            style: const TextStyle(color: AppColors.error, fontSize: 13),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _handleResetPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.inkTeal,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      context.tr('auth.set_password_btn'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
           ),
         ],
-        const SizedBox(height: 28),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _handleResetPassword,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.inkTeal,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    context.tr('auth.set_password_btn'),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 

@@ -150,10 +150,45 @@ class OrgsRepository {
     );
   }
 
+  /// Fetch single organization by ID
+  Future<ApiResponse<Organization>> fetchOrganization(String id) async {
+    return _apiClient.get<Organization>(
+      ApiConstants.org(id),
+      parser: (json) {
+        if (json is Map<String, dynamic>) {
+          return Organization.fromJson(json);
+        }
+        return Organization.fromJson(Map<String, dynamic>.from(json as Map));
+      },
+    );
+  }
+
+  /// Update organization details (PATCH /orgs/:id)
+  Future<ApiResponse<Map<String, dynamic>>> updateOrganization(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    return _apiClient.patch<Map<String, dynamic>>(
+      ApiConstants.org(id),
+      body: data,
+    );
+  }
+
   /// Delete an organization / business (temporary/destructive)
   Future<ApiResponse<Map<String, dynamic>>> deleteOrganization(String orgId) async {
     return _apiClient.delete<Map<String, dynamic>>(
-      '${ApiConstants.orgs}/$orgId',
+      ApiConstants.org(orgId),
+    );
+  }
+
+  /// Invite/add a member to an organization (POST /orgs/:id/members)
+  Future<ApiResponse<Map<String, dynamic>>> inviteMember(
+    String orgId,
+    Map<String, dynamic> body,
+  ) async {
+    return _apiClient.post<Map<String, dynamic>>(
+      ApiConstants.orgMembers(orgId),
+      body: body,
     );
   }
 }

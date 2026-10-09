@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
@@ -131,15 +132,21 @@ class _SuppliersListViewState extends State<SuppliersListView> {
       ),
     );
     if (confirm == true) {
-      setState(() {
-        _suppliers.removeWhere((s) => s.id == supplier.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${supplier.name} ${context.tr('common.deleted_success').toLowerCase()}.'),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final res = await _suppliersRepo.deleteSupplier(supplier.id);
+      if (!mounted) return;
+
+      if (res.isSuccess) {
+        setState(() {
+          _suppliers.removeWhere((s) => s.id == supplier.id);
+        });
+        ApiHelper.showSuccessSnackBar(
+          context,
+          '${supplier.name} ${context.tr('common.deleted_success').toLowerCase()}.',
+        );
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          res.errorMessage ?? context.tr('common.error'),
         );
       }
     }

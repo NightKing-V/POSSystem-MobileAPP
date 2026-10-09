@@ -219,6 +219,24 @@ class SuppliersRepository {
     );
   }
 
+  /// Update an existing supplier (PATCH /suppliers/:id)
+  Future<ApiResponse<Map<String, dynamic>>> updateSupplier(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    return _apiClient.patch<Map<String, dynamic>>(
+      ApiConstants.supplier(id),
+      body: data,
+    );
+  }
+
+  /// Delete a supplier (DELETE /suppliers/:id)
+  Future<ApiResponse<Map<String, dynamic>>> deleteSupplier(String id) async {
+    return _apiClient.delete<Map<String, dynamic>>(
+      ApiConstants.supplier(id),
+    );
+  }
+
   /// Fetch purchase orders
   Future<ApiResponse<List<PurchaseOrderProps>>> fetchPurchaseOrders({
     String? orgId,
@@ -258,9 +276,16 @@ class SuppliersRepository {
     String id,
     String status,
   ) async {
-    return _apiClient.put<Map<String, dynamic>>(
-      '${ApiConstants.purchaseOrders}/$id',
+    return _apiClient.patch<Map<String, dynamic>>(
+      ApiConstants.purchaseOrder(id),
       body: {'status': status},
+    );
+  }
+
+  /// Delete purchase order (DELETE /purchase-orders/:id)
+  Future<ApiResponse<Map<String, dynamic>>> deletePurchaseOrder(String id) async {
+    return _apiClient.delete<Map<String, dynamic>>(
+      ApiConstants.purchaseOrder(id),
     );
   }
 }

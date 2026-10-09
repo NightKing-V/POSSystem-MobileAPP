@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
-
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
+import '../../../../core/widgets/phone_input_field.dart';
 import '../../data/customers_repository.dart';
-import '../../../../core/api/api_helper.dart';
+import '../validators/customer_validators.dart';
 
 class AddCustomerView extends StatefulWidget {
-  const AddCustomerView({super.key, this.orgId, this.isModal = true});
+  const AddCustomerView({
+    super.key,
+    this.customer,
+    this.orgId,
+    this.isModal = true,
+  });
 
+  final CustomerProps? customer;
   final String? orgId;
   final bool isModal;
 
@@ -24,13 +34,15 @@ class _AddCustomerViewState extends State<AddCustomerView> {
   late final TextEditingController _addressCtrl;
   bool _isLoading = false;
 
+  bool get _isEditing => widget.customer != null;
+
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController();
-    _phoneCtrl = TextEditingController();
-    _emailCtrl = TextEditingController();
-    _addressCtrl = TextEditingController();
+    _nameCtrl = TextEditingController(text: widget.customer?.fullName ?? '');
+    _phoneCtrl = TextEditingController(text: widget.customer?.phone ?? '');
+    _emailCtrl = TextEditingController(text: widget.customer?.email ?? '');
+    _addressCtrl = TextEditingController(text: widget.customer?.address ?? '');
   }
 
   @override
@@ -43,31 +55,52 @@ class _AddCustomerViewState extends State<AddCustomerView> {
   }
 
   Future<void> _save() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isLoading = true);
+
+    final ApiResponse<Map<String, dynamic>> response;
+
+    if (_isEditing) {
+      final updateData = <String, dynamic>{
+        'full_name': _nameCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        if (_emailCtrl.text.isNotEmpty) 'email': _emailCtrl.text.trim(),
+        if (_addressCtrl.text.isNotEmpty) 'address': _addressCtrl.text.trim(),
+      };
+      response = await _customersRepo.updateCustomer(
+        widget.customer!.id,
+        updateData,
+      );
+    } else {
       final dto = CreateCustomerDto(
         orgId: widget.orgId ?? '00000000-0000-0000-0000-000000000000',
         fullName: _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         email: _emailCtrl.text.isNotEmpty ? _emailCtrl.text.trim() : null,
-        address: _addressCtrl.text.isNotEmpty ? _addressCtrl.text.trim() : null,
+        address: _addressCtrl.text.isNotEmpty
+            ? _addressCtrl.text.trim()
+            : null,
       );
+      response = await _customersRepo.createCustomer(dto);
+    }
 
-      final response = await _customersRepo.createCustomer(dto);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      if (response.isSuccess) {
-        ApiHelper.showSuccessSnackBar(context, context.tr('common.created_success'));
-        Navigator.of(context).pop(true);
-      } else {
-        ApiHelper.showErrorSnackBar(
-          context,
-          response.errorMessage ?? context.tr('common.error'),
-        );
-      }
+    if (response.isSuccess) {
+      ApiHelper.showSuccessSnackBar(
+        context,
+        _isEditing
+            ? context.tr('common.updated_success')
+            : context.tr('common.created_success'),
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      ApiHelper.showErrorSnackBar(
+        context,
+        response.errorMessage ?? context.tr('common.error'),
+      );
     }
   }
 
@@ -83,26 +116,28 @@ class _AddCustomerViewState extends State<AddCustomerView> {
             Text(
               context.tr('customers.customer_details'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel(context.tr('customers.name')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('customers.name'),
+              isRequired: true,
               controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(hintText: context.tr('customers.name_hint')),
-              validator: (v) => (v == null || v.trim().isEmpty) ? context.tr('customers.name_required') : null,
+              hintText: context.tr('customers.name_hint'),
+              validator: CustomerValidators.name.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel(context.tr('customers.phone')),
-            TextFormField(
+            FormFieldLabel(
+              label: context.tr('customers.phone'),
+              isRequired: true,
+            ),
+            PhoneInputField(
               controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(hintText: context.tr('customers.phone_hint')),
-              validator: (v) => (v == null || v.trim().isEmpty) ? context.tr('customers.phone_required') : null,
+              isRequired: true,
+              hintText: context.tr('customers.phone_hint'),
             ),
             const SizedBox(height: 20),
             const Divider(color: AppColors.hairline, height: 1),
@@ -110,23 +145,27 @@ class _AddCustomerViewState extends State<AddCustomerView> {
             Text(
               context.tr('customers.contact_and_address'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel(context.tr('customers.email')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('customers.email'),
+              isRequired: false,
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(hintText: context.tr('customers.email_hint')),
+              hintText: context.tr('customers.email_hint'),
+              validator: CustomerValidators.email.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel(context.tr('customers.address')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('customers.address'),
+              isRequired: false,
               controller: _addressCtrl,
-              decoration: InputDecoration(hintText: context.tr('customers.address_hint')),
+              hintText: context.tr('customers.address_hint'),
+              validator: CustomerValidators.address.validate,
             ),
           ],
         ),
@@ -152,7 +191,9 @@ class _AddCustomerViewState extends State<AddCustomerView> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.slate,
                 side: const BorderSide(color: AppColors.hairline, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 48),
               ),
               child: Text(context.tr('common.cancel')),
@@ -167,7 +208,9 @@ class _AddCustomerViewState extends State<AddCustomerView> {
                 backgroundColor: AppColors.inkTeal,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 48),
               ),
               child: _isLoading
@@ -182,9 +225,9 @@ class _AddCustomerViewState extends State<AddCustomerView> {
                   : Text(
                       context.tr('customers.save_customer'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),
@@ -213,31 +256,12 @@ class _AddCustomerViewState extends State<AddCustomerView> {
         titleSpacing: 16,
         title: Text(
           context.tr('customers.add_customer'),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(child: content),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-      ),
     );
   }
 }

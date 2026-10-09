@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/form_field_label.dart';
+import '../../../../core/widgets/password_strength_indicator.dart';
+import '../../../../core/widgets/phone_input_field.dart';
 import '../../data/auth_repository.dart';
 import '../../../Organisations/presentation/pages/select_business.dart';
+import '../validators/auth_validators.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_wordmark.dart';
 import '../widgets/auth_step_indicator.dart';
@@ -33,6 +37,9 @@ class _SignupPageState extends State<SignupPage> {
   String? _errorText;
 
   final _data = _SignupData();
+  final _accountFormKey = GlobalKey<FormState>();
+  final _securityFormKey = GlobalKey<FormState>();
+
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -81,26 +88,15 @@ class _SignupPageState extends State<SignupPage> {
   void _next() {
     switch (_step) {
       case _Step.account:
-        final email = _emailCtrl.text.trim();
-        if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-          setState(() => _errorText = context.tr('auth.invalid_email'));
-          return;
-        }
+        if (!_accountFormKey.currentState!.validate()) return;
         _data.fullname = _nameCtrl.text.trim();
-        _data.email = email;
+        _data.email = _emailCtrl.text.trim();
         _data.phone = _phoneCtrl.text.trim();
         _goTo(_Step.security);
         break;
 
       case _Step.security:
-        if (_passwordCtrl.text.length < 8) {
-          setState(() => _errorText = context.tr('auth.password_min_length'));
-          return;
-        }
-        if (_passwordCtrl.text != _confirmCtrl.text) {
-          setState(() => _errorText = context.tr('auth.passwords_dont_match'));
-          return;
-        }
+        if (!_securityFormKey.currentState!.validate()) return;
         _data.password = _passwordCtrl.text;
         _goTo(_Step.creating);
         _registerUser();
@@ -259,61 +255,89 @@ class _SignupPageState extends State<SignupPage> {
   Widget _buildStepContent() {
     switch (_step) {
       case _Step.account:
-        return _StepShell(
-          title: context.tr('auth.create_account'),
-          subtitle: context.tr('auth.sign_in_to_continue'),
-          errorText: _errorText,
-          onBack: _back,
-          onContinue: _next,
-          showBack: true,
-          continueLabel: context.tr('common.continue'),
-          fields: [
-            AuthTextField(
-              label: '${context.tr('auth.full_name')} (${context.tr('common.optional')})',
-              hintText: context.tr('auth.full_name_hint'),
-              controller: _nameCtrl,
-              keyboardType: TextInputType.name,
-            ),
-            const SizedBox(height: 20),
-            AuthTextField(
-              label: context.tr('auth.email'),
-              hintText: context.tr('auth.email_hint'),
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-            AuthTextField(
-              label: '${context.tr('auth.phone')} (${context.tr('common.optional')})',
-              hintText: context.tr('auth.phone_hint'),
-              controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-            ),
-          ],
+        return Form(
+          key: _accountFormKey,
+          child: _StepShell(
+            title: context.tr('auth.create_account'),
+            subtitle: context.tr('auth.sign_in_to_continue'),
+            errorText: _errorText,
+            onBack: _back,
+            onContinue: _next,
+            showBack: true,
+            continueLabel: context.tr('common.continue'),
+            fields: [
+              AuthTextField(
+                label: context.tr('auth.full_name'),
+                hintText: context.tr('auth.full_name_hint'),
+                controller: _nameCtrl,
+                keyboardType: TextInputType.name,
+                isRequired: false,
+              ),
+              const SizedBox(height: 20),
+              AuthTextField(
+                label: context.tr('auth.email'),
+                hintText: context.tr('auth.email_hint'),
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                validator: AuthValidators.email.validate,
+                isRequired: true,
+              ),
+              const SizedBox(height: 20),
+              FormFieldLabel(
+                label: context.tr('auth.phone'),
+                isRequired: false,
+              ),
+              PhoneInputField(
+                controller: _phoneCtrl,
+                isRequired: false,
+                hintText: context.tr('auth.phone_hint'),
+              ),
+            ],
+          ),
         );
 
       case _Step.security:
-        return _StepShell(
-          title: context.tr('auth.set_new_password_title'),
-          subtitle: context.tr('auth.password_min_length'),
-          errorText: _errorText,
-          onBack: _back,
-          onContinue: _next,
-          continueLabel: context.tr('auth.create_account'),
-          fields: [
-            AuthTextField(
-              label: context.tr('auth.password'),
-              hintText: context.tr('auth.password_min_length'),
-              obscureText: true,
-              controller: _passwordCtrl,
-            ),
-            const SizedBox(height: 20),
-            AuthTextField(
-              label: context.tr('auth.confirm_new_password'),
-              hintText: context.tr('auth.password_hint'),
-              obscureText: true,
-              controller: _confirmCtrl,
-            ),
-          ],
+        return Form(
+          key: _securityFormKey,
+          child: _StepShell(
+            title: context.tr('auth.set_new_password_title'),
+            subtitle: context.tr('auth.password_min_length'),
+            errorText: _errorText,
+            onBack: _back,
+            onContinue: _next,
+            continueLabel: context.tr('auth.create_account'),
+            fields: [
+              AuthTextField(
+                label: context.tr('auth.password'),
+                hintText: context.tr('auth.password_min_length'),
+                obscureText: true,
+                controller: _passwordCtrl,
+                validator: AuthValidators.password.validate,
+                isRequired: true,
+                onChanged: (_) => setState(() {}),
+              ),
+              PasswordStrengthIndicator(
+                password: _passwordCtrl.text,
+              ),
+              const SizedBox(height: 16),
+              AuthTextField(
+                label: context.tr('auth.confirm_new_password'),
+                hintText: context.tr('auth.password_hint'),
+                obscureText: true,
+                controller: _confirmCtrl,
+                validator: (v) {
+                  if (v == null || v.isEmpty) {
+                    return 'Please confirm your password';
+                  }
+                  if (v != _passwordCtrl.text) {
+                    return context.tr('auth.passwords_dont_match');
+                  }
+                  return null;
+                },
+                isRequired: true,
+              ),
+            ],
+          ),
         );
 
       case _Step.creating:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_helper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_modal.dart';
@@ -7,6 +8,8 @@ import '../../../../core/widgets/management_header.dart';
 import '../../../Organisations/data/orgs_repository.dart';
 import '../widgets/location_card.dart';
 import './add_edit_location_view.dart';
+
+import '../../../inventory/data/inventory_repository.dart';
 
 class LocationsListView extends StatefulWidget {
   const LocationsListView({
@@ -23,6 +26,7 @@ class LocationsListView extends StatefulWidget {
 }
 
 class _LocationsListViewState extends State<LocationsListView> {
+  final _inventoryRepo = InventoryRepository();
   final _orgsRepo = OrgsRepository();
   List<LocationProps> _locations = [];
   List<bool> _activeStates = [];
@@ -39,6 +43,26 @@ class _LocationsListViewState extends State<LocationsListView> {
 
   Future<void> _loadLocations() async {
     setState(() => _isLoading = true);
+    final invRes = await _inventoryRepo.fetchLocations();
+    if (!mounted) return;
+
+    if (invRes.isSuccess && invRes.data != null && invRes.data!.isNotEmpty) {
+      setState(() {
+        _isLoading = false;
+        _locations = invRes.data!
+            .map((l) => LocationProps(
+                  id: l.id,
+                  name: l.name,
+                  type: l.type,
+                  address: l.address,
+                  phone: l.phone,
+                ))
+            .toList();
+        _activeStates = _locations.map((_) => true).toList();
+      });
+      return;
+    }
+
     final res = await _orgsRepo.fetchOrganizations();
     if (!mounted) return;
     setState(() {
@@ -128,15 +152,18 @@ class _LocationsListViewState extends State<LocationsListView> {
       ),
     );
     if (confirm == true) {
-      setState(() {
-        _locations.removeWhere((l) => l.id == loc.id);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('common.deleted_success')),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final deleteRes = await _inventoryRepo.deleteLocation(loc.id);
+      if (!mounted) return;
+
+      if (deleteRes.isSuccess) {
+        setState(() {
+          _locations.removeWhere((l) => l.id == loc.id);
+        });
+        ApiHelper.showSuccessSnackBar(context, context.tr('common.deleted_success'));
+      } else {
+        ApiHelper.showErrorSnackBar(
+          context,
+          deleteRes.errorMessage ?? context.tr('common.error'),
         );
       }
     }

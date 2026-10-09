@@ -252,15 +252,21 @@ class _CartViewState extends State<CartView> {
     final user = TokenStorage.getCurrentUser();
     final cashierId = (user?['id'] ?? user?['userId'] ?? 'cashier').toString();
 
+    final String paymentMethodCode = switch (_paymentMethod) {
+      PaymentMethod.cash => 'CASH',
+      PaymentMethod.card => 'CARD',
+      PaymentMethod.wallet => 'BANK_TRANSFER',
+    };
+
     final dto = CreateBillDto(
-      orgId: widget.orgId ?? '',
+      orgId: widget.orgId ?? TokenStorage.currentOrgId ?? '',
       locationId: widget.locationId ?? '',
       cashierId: cashierId,
       customerId: _selectedCustomer?.id,
       items: billItems,
       payments: [
         BillPaymentDto(
-          paymentMethod: _paymentMethod.name.toUpperCase(),
+          paymentMethod: paymentMethodCode,
           amount: grandTotal,
         ),
       ],

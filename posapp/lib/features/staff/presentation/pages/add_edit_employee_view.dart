@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_helper.dart';
 import '../../../../core/api/token_storage.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_text_form_field.dart';
+import '../../../../core/widgets/form_field_label.dart';
+import '../../../../core/widgets/password_strength_indicator.dart';
+import '../../../../core/widgets/phone_input_field.dart';
 import '../../data/staff_repository.dart';
+import '../validators/staff_validators.dart';
 
 class AddEditEmployeeView extends StatefulWidget {
   const AddEditEmployeeView({
@@ -63,7 +69,9 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
         _availableRoles = res.data!;
         if (_selectedRoleId == null && _availableRoles.isNotEmpty) {
           final matched = _availableRoles.where(
-            (r) => r.name.toLowerCase() == (widget.employee?.role ?? '').toLowerCase(),
+            (r) =>
+                r.name.toLowerCase() ==
+                (widget.employee?.role ?? '').toLowerCase(),
           );
           if (matched.isNotEmpty) {
             _selectedRoleId = matched.first.id;
@@ -91,12 +99,22 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
-      password:
-          _passwordCtrl.text.isNotEmpty ? _passwordCtrl.text : 'Password@123',
+      password: _passwordCtrl.text.isNotEmpty
+          ? _passwordCtrl.text
+          : 'Password@123',
       roleId: _selectedRoleId,
     );
 
-    final res = await _staffRepo.createStaffUser(dto);
+    final ApiResponse<Map<String, dynamic>> res;
+    if (_isEditing && widget.employee != null) {
+      final updateData = <String, dynamic>{
+        'fullname': _nameCtrl.text.trim(),
+        if (_phoneCtrl.text.trim().isNotEmpty) 'phone': _phoneCtrl.text.trim(),
+      };
+      res = await _staffRepo.updateUser(widget.employee!.id, updateData);
+    } else {
+      res = await _staffRepo.createStaffUser(dto, orgId: _effectiveOrgId);
+    }
 
     if (!mounted) return;
 
@@ -117,7 +135,9 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
       setState(() => _isLoading = false);
       ApiHelper.showSuccessSnackBar(
         context,
-        _isEditing ? context.tr('common.updated_success') : context.tr('common.created_success'),
+        _isEditing
+            ? context.tr('common.updated_success')
+            : context.tr('common.created_success'),
       );
       Navigator.of(context).pop(true);
     } else {
@@ -141,39 +161,37 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
             Text(
               context.tr('staff.employees'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 14),
-            _FieldLabel(context.tr('staff.employee_name')),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('staff.employee_name'),
+              isRequired: true,
               controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(hintText: context.tr('staff.employee_name_hint')),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? context.tr('customers.name_required') : null,
+              hintText: context.tr('staff.employee_name_hint'),
+              validator: StaffValidators.employeeName.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel('${context.tr('auth.email')} *'),
-            TextFormField(
+            AppTextFormField(
+              label: context.tr('auth.email'),
+              isRequired: true,
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(hintText: context.tr('auth.email_hint')),
-              validator: (v) => (v == null || !v.contains('@'))
-                  ? context.tr('auth.invalid_email')
-                  : null,
+              hintText: context.tr('auth.email_hint'),
+              validator: StaffValidators.email.validate,
             ),
             const SizedBox(height: 16),
-            _FieldLabel(context.tr('auth.phone')),
-            TextFormField(
+            FormFieldLabel(label: context.tr('auth.phone')),
+            PhoneInputField(
               controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(hintText: context.tr('auth.phone_hint')),
+              isRequired: false,
+              hintText: context.tr('auth.phone_hint'),
             ),
             const SizedBox(height: 16),
-            _FieldLabel(context.tr('staff.role')),
+            FormFieldLabel(label: context.tr('staff.role')),
             if (_isLoadingRoles)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
@@ -184,8 +202,11 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                 initialValue: _selectedRoleId,
                 decoration: InputDecoration(
                   hintText: context.tr('staff.select_role'),
-                  prefixIcon: const Icon(Icons.admin_panel_settings_outlined,
-                      color: AppColors.slate, size: 20),
+                  prefixIcon: const Icon(
+                    Icons.admin_panel_settings_outlined,
+                    color: AppColors.slate,
+                    size: 20,
+                  ),
                 ),
                 items: _availableRoles.map((role) {
                   return DropdownMenuItem<String>(
@@ -202,14 +223,17 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
               ),
             if (!_isEditing) ...[
               const SizedBox(height: 16),
-              _FieldLabel('${context.tr('auth.password')} *'),
-              TextFormField(
+              AppTextFormField(
+                label: context.tr('auth.password'),
+                isRequired: true,
                 controller: _passwordCtrl,
                 obscureText: true,
-                decoration: InputDecoration(hintText: context.tr('auth.password_hint')),
-                validator: (v) => (v == null || v.length < 8)
-                    ? context.tr('auth.password_min_length')
-                    : null,
+                hintText: context.tr('auth.password_hint'),
+                validator: StaffValidators.password.validate,
+                onChanged: (_) => setState(() {}),
+              ),
+              PasswordStrengthIndicator(
+                password: _passwordCtrl.text,
               ),
             ],
           ],
@@ -235,10 +259,10 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.slate,
-                side: const BorderSide(
-                    color: AppColors.hairline, width: 1.5),
+                side: const BorderSide(color: AppColors.hairline, width: 1.5),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 48),
               ),
               child: Text(context.tr('common.cancel')),
@@ -254,7 +278,8 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 minimumSize: const Size(0, 48),
               ),
               child: _isLoading
@@ -270,13 +295,10 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
                       _isEditing
                           ? context.tr('common.save')
                           : context.tr('staff.add_employee'),
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),
@@ -304,35 +326,15 @@ class _AddEditEmployeeViewState extends State<AddEditEmployeeView> {
         elevation: 0,
         titleSpacing: 16,
         title: Text(
-          _isEditing ? context.tr('staff.edit_employee') : context.tr('staff.add_employee'),
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontSize: 17),
+          _isEditing
+              ? context.tr('staff.edit_employee')
+              : context.tr('staff.add_employee'),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 17),
         ),
       ),
       body: SafeArea(child: content),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.ink,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-      ),
     );
   }
 }
